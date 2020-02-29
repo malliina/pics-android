@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/pics_nav"
+    app:startDestination="@id/pics_gallery">
+    <fragment
+        android:id="@+id/pics_gallery"
+        android:name="com.skogberglabs.pics.ui.gallery.GalleryFragment"
+        tools:layout="@layout/gallery_fragment" />
+</navigation>

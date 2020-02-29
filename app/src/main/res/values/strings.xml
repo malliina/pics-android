@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Pics</string>
+    <string name="public_gallery">Public gallery</string>
+    <string name="login">Log in</string>
+    <string name="logout">Log out</string>
+    <string name="signed_in">Signed in.</string>
+    <string name="not_signed_in">Not signed in.</string>
+</resources>

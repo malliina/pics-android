@@ -11,13 +11,15 @@ import com.amazonaws.mobile.client.UserStateDetails
 import com.skogberglabs.pics.backend.IdToken
 import timber.log.Timber
 
+fun <T, U> MutableLiveData<T>.map(f: (t: T) -> U): LiveData<U> = Transformations.map(this, f)
+
 class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
     private val client: AWSMobileClient get() = AWSMobileClient.getInstance()
 
     private val authStates = MutableLiveData<UserStateDetails>()
     private val idTokens = MutableLiveData<IdToken>()
     val tokens: LiveData<IdToken> = idTokens
-    val isSignedIn: LiveData<Boolean> = Transformations.map(authStates) { state ->
+    val isSignedIn: LiveData<Boolean> = authStates.map { state ->
         when (state.userState) {
             UserState.SIGNED_IN -> true
             else -> false

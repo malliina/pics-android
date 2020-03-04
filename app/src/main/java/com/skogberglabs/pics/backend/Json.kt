@@ -6,6 +6,7 @@ import com.squareup.moshi.*
 class Json {
     companion object {
         val instance = Json()
+        val moshi: Moshi get() = instance.moshi
 
         fun fail(message: String): Nothing =
             throw JsonDataException(message)

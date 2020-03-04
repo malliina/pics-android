@@ -1,6 +1,7 @@
 package com.skogberglabs.pics.auth
 
 import android.app.Activity
+import android.content.Context
 import com.amazonaws.mobile.client.*
 import com.amazonaws.mobileconnectors.cognitoauth.exceptions.AuthNavigationException
 import kotlinx.coroutines.*
@@ -14,7 +15,8 @@ class Cognito {
         val client: AWSMobileClient get() = AWSMobileClient.getInstance()
     }
 
-    private val uiScope = CoroutineScope(Dispatchers.Main)
+//    private val uiScope = CoroutineScope(Dispatchers.Main)
+    private val ioScope = CoroutineScope(Dispatchers.IO)
 
     // Launches Google sign in directly
     private val google = HostedUIOptions.builder()
@@ -28,8 +30,9 @@ class Cognito {
         .build()
 
     fun signIn(callingActivity: Activity) {
-        uiScope.launch {
-            val userStateDetails = initialize(callingActivity)
+        Timber.i("Signing in...")
+        ioScope.launch {
+            initialize(callingActivity.applicationContext)
             Timber.i("Initialized.")
             try {
                 val signIn = socialSignIn(callingActivity, options)
@@ -40,10 +43,11 @@ class Cognito {
         }
     }
 
-    private suspend fun socialSignIn(
+    suspend fun socialSignIn(
         callingActivity: Activity,
         options: SignInUIOptions
     ): UserStateDetails {
+        Timber.i("Social sign in...")
         return suspendCancellableCoroutine { cont ->
             client.showSignIn(
                 callingActivity,
@@ -53,15 +57,19 @@ class Cognito {
         }
     }
 
-    private suspend fun initialize(callingActivity: Activity): UserStateDetails {
+    fun launchInitialize(appContext: Context) = ioScope.launch { initialize(appContext) }
+
+    suspend fun initialize(appContext: Context): UserStateDetails {
+        Timber.i("Initializing...")
         return suspendCancellableCoroutine { cont ->
-            client.initialize(callingActivity, AuthCallback(cont))
+            client.initialize(appContext, AuthCallback(cont))
         }
     }
 
     class AuthCallback(private val cont: CancellableContinuation<UserStateDetails>) :
         Callback<UserStateDetails> {
         override fun onResult(result: UserStateDetails) {
+            Timber.i("Auth result $result ${result.userState}.")
             cont.resume(result)
         }
 

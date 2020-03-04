@@ -4,9 +4,13 @@ import android.app.Application
 import com.microsoft.appcenter.AppCenter
 import com.microsoft.appcenter.analytics.Analytics
 import com.microsoft.appcenter.crashes.Crashes
+import com.skogberglabs.pics.auth.Cognito
 import timber.log.Timber
 
 class PicsApp : Application() {
+    private lateinit var savedSettings: UserSettings
+    val settings: UserSettings get() = savedSettings
+
     override fun onCreate() {
         super.onCreate()
         AppCenter.start(
@@ -17,6 +21,8 @@ class PicsApp : Application() {
         )
         val tree = if (BuildConfig.DEBUG) Timber.DebugTree() else NoLogging()
         Timber.plant(tree)
+        savedSettings = UserSettings.load(applicationContext)
+        Cognito.instance
     }
 
     class NoLogging : Timber.Tree() {

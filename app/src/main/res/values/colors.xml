@@ -3,10 +3,13 @@
 <!--    <color name="colorPrimary">#008577</color>-->
     <color name="colorPrimary">#323232</color>
     <color name="colorPrimaryDark">#00574B</color>
-<!--    <color name="colorAccent">#D81B60</color>-->
+    <!--    <color name="colorAccent">#D81B60</color>-->
+    <color name="colorPink">#D81B60</color>
     <color name="colorAccent">#141414</color>
     <color name="colorBlueish">#007AFF</color>
     <color name="colorRed">#FF0000</color>
     <color name="colorAlmostBlack">#141414</color>
     <color name="colorBlackish">#323232</color>
+    <color name="colorBlack">#000000</color>
+    <color name="colorLight">#EFEFF4</color>
 </resources>

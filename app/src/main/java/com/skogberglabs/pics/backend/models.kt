@@ -1,5 +1,6 @@
 package com.skogberglabs.pics.backend
 
+import com.amazonaws.mobile.client.results.Token
 import com.android.volley.NetworkResponse
 import com.android.volley.VolleyError
 import com.android.volley.toolbox.HttpHeaderParser
@@ -23,7 +24,12 @@ data class IdToken(val token: String) : Primitive {
     override fun toString(): String = token
 }
 
-data class UserInfo(val email: Email, val idToken: IdToken)
+data class UserInfo(val email: Email, val idToken: IdToken) {
+    companion object {
+        fun fromAws(token: Token): UserInfo =
+            UserInfo(Email(token.getClaim("email")), IdToken(token.tokenString))
+    }
+}
 
 data class FullUrl(val proto: String, val hostAndPort: String, val uri: String) {
     private val host = hostAndPort.takeWhile { c -> c != ':' }

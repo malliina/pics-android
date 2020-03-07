@@ -1,9 +1,31 @@
 package com.skogberglabs.pics.backend
 
-class PicsHttpClient(http: HttpClient) {
+import android.content.Context
+
+class PicsHttpClient(val http: HttpClient) {
     companion object {
-        val picsVersion10 = "application/vnd.pics.v10+json"
+        private val picsVersion10 = "application/vnd.pics.v10+json"
+
+        private val picsAdapter = Json.moshi.adapter(Pics::class.java)
+
+        @Volatile
+        private var instance: PicsHttpClient? = null
+
+        fun get(context: Context): PicsHttpClient = instance ?: synchronized(this) {
+            instance
+                ?: PicsHttpClient(HttpClient(context)).also {
+                    instance = it
+                }
+        }
     }
 
+    fun updateToken(token: IdToken?) {
+        http.token = token
+    }
 
+    suspend fun pics(limit: Int, offset: Int): Pics =
+        http.getJson(
+            FullUrl.https("pics.malliina.com", "/pics?limit=$limit&offset=$offset"),
+            picsAdapter
+        )
 }

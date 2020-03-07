@@ -5,4 +5,6 @@
     <string name="logout">Log out</string>
     <string name="signed_in">Signed in.</string>
     <string name="not_signed_in">Not signed in.</string>
+    <string name="no_pics">No pics yet.</string>
+    <string name="error_generic">An error occurred.</string>
 </resources>

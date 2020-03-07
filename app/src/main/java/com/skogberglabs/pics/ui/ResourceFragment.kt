@@ -9,6 +9,7 @@ import com.skogberglabs.pics.PicsApp
 
 abstract class ResourceFragment(private val layoutResource: Int) : Fragment() {
     val app: PicsApp get() = requireActivity().application as PicsApp
+    val isPrivate: Boolean get() = app.settings.isPrivate
 
     override fun onCreateView(
         inflater: LayoutInflater,

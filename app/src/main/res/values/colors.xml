@@ -12,4 +12,5 @@
     <color name="colorBlackish">#323232</color>
     <color name="colorBlack">#000000</color>
     <color name="colorLight">#EFEFF4</color>
+    <color name="colorDivider">#4da1a1a1</color>
 </resources>

@@ -1,4 +1,4 @@
-package com.skogberglabs.pics.backend
+package com.skogberglabs.pics.auth
 
 import android.app.Activity
 import android.content.Context
@@ -8,6 +8,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import com.skogberglabs.pics.backend.Email
+import com.skogberglabs.pics.backend.IdToken
+import com.skogberglabs.pics.backend.UserInfo
 import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -28,7 +31,7 @@ class Google {
         }
     }
 
-    private val webClientId = "122390040180-78dau8o0fd6eelgfdhed6g2pj4hlh701.apps.googleusercontent.com"
+    private val webClientId = "469087885456-hol73l5j9tur3oq9fb4c07hr0m4dibge.apps.googleusercontent.com"
 
     fun client(activity: Activity): GoogleSignInClient = GoogleSignIn.getClient(activity, options())
 

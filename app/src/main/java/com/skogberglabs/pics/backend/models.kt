@@ -31,6 +31,13 @@ data class UserInfo(val email: Email, val idToken: IdToken) {
     }
 }
 
+data class StorageSize(val bytes: Long) {
+    override fun toString(): String = "$bytes"
+}
+
+inline val Long.bytes: StorageSize
+    get() = StorageSize(this)
+
 data class FullUrl(val proto: String, val hostAndPort: String, val uri: String) {
     private val host = hostAndPort.takeWhile { c -> c != ':' }
     private val protoAndHost = "$proto://$hostAndPort"
@@ -73,7 +80,11 @@ data class FullUrl(val proto: String, val hostAndPort: String, val uri: String) 
 }
 
 @JsonClass(generateAdapter = true)
-data class SingleError(val key: String, val message: String)
+data class SingleError(val key: String, val message: String) {
+    companion object {
+        fun backend(message: String) = SingleError("backend", message)
+    }
+}
 
 @JsonClass(generateAdapter = true)
 data class Errors(val errors: List<SingleError>) {
@@ -107,4 +118,18 @@ data class ResponseException(val error: VolleyError, val req: RequestConf) :
     }
 
     fun isTokenExpired(): Boolean = errors().errors.any { e -> e.key == "token_expired" }
+}
+
+enum class Status {
+    Success,
+    Error,
+    Loading
+}
+
+data class Outcome<out T>(val status: Status, val data: T?, val error: SingleError?) {
+    companion object {
+        fun <T> success(t: T): Outcome<T> = Outcome(Status.Success, t, null)
+        fun error(err: SingleError): Outcome<Nothing> = Outcome(Status.Error, null, err)
+        fun loading(): Outcome<Nothing> = Outcome(Status.Loading, null, null)
+    }
 }

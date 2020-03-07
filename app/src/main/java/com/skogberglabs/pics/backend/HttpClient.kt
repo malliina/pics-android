@@ -6,6 +6,8 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.skogberglabs.pics.auth.Cognito
+import com.skogberglabs.pics.auth.Google
 import com.squareup.moshi.JsonAdapter
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -21,32 +23,22 @@ class HttpClient(ctx: Context) {
         fun headers(token: IdToken?): Map<String, String> {
             val acceptPair = "Accept" to "application/json"
             return if (token != null) mapOf(
-                Authorization to "bearer $token",
+                Authorization to "Bearer $token",
                 acceptPair
             ) else mapOf(acceptPair)
         }
-
-        @Volatile
-        private var INSTANCE: HttpClient? = null
-
-        fun getInstance(context: Context) =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE
-                    ?: HttpClient(context).also {
-                        INSTANCE = it
-                    }
-            }
     }
 
     private val queue: RequestQueue = Volley.newRequestQueue(ctx.applicationContext)
-    private val google = Google.instance.client(ctx.applicationContext)
 
+    private val google = Google.instance.client(ctx.applicationContext)
     var token: IdToken? = null
 
     // https://jankotlin.wordpress.com/2017/10/16/volley-for-lazy-kotliniers/
     suspend fun getData(url: FullUrl): JSONObject = makeWithRetry(RequestConf.get(url, token))
 
     suspend fun <T> getJson(url: FullUrl, adapter: JsonAdapter<T>): T {
+        Timber.i("Loading $url with $token...")
         val json = getData(url)
         return adapter.readUrl(json.toString(), url)
     }
@@ -75,6 +67,8 @@ class HttpClient(ctx: Context) {
         } catch (e: ResponseException) {
             if (e.isTokenExpired()) {
                 Timber.i("JWT is expired. Obtaining a new token and retrying...")
+//                val newToken = Cognito.instance.user().idToken
+                //                token = newToken
                 val userInfo = Google.instance.signInSilently(google)
                 token = userInfo.idToken
                 makeRequest(conf.copy(token = userInfo.idToken))

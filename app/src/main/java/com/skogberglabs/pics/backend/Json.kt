@@ -26,6 +26,12 @@ class PrimitiveAdapter {
     fun writeEmail(s: Email): String = s.email
 
     @FromJson
+    fun picKey(s: String): PicKey = PicKey(s)
+
+    @ToJson
+    fun writePicKey(s: PicKey): String = s.key
+
+    @FromJson
     fun id(s: String): IdToken = IdToken(s)
 
     @ToJson

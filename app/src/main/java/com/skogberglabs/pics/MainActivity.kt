@@ -1,16 +1,23 @@
 package com.skogberglabs.pics
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
-import com.amazonaws.mobile.client.AWSMobileClient
-import com.skogberglabs.pics.auth.Cognito
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.tasks.Task
+import com.skogberglabs.pics.auth.Google
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
-    private val client: AWSMobileClient get() = AWSMobileClient.getInstance()
+    companion object {
+        const val requestCodeSignIn = 111
+    }
 
     private lateinit var viewModel: MainActivityViewModel
     val app: PicsApp get() = application as PicsApp
@@ -18,26 +25,40 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
-        Timber.i("onCreate ${app.settings.isPrivate}")
-        val theme = if (app.settings.isPrivate) R.style.PrivateTheme else R.style.PublicTheme
-        setTheme(theme)
+        val isPrivate = app.settings.isPrivate
+        Timber.i("onCreate privately $isPrivate")
+//        val theme = if (isPrivate) R.style.PrivateTheme else R.style.PublicTheme
+//        setTheme(theme)
         setContentView(R.layout.main_activity)
         if (savedInstanceState == null) {
             setupActionBarWithNavController(navController())
         }
-        if (UserSettings.load(applicationContext).isPrivate) {
-            Cognito.instance.signIn(this)
+        viewModel.signInSilently(applicationContext)
+//        if (isPrivate) {
+//            Cognito.instance.signIn(this)
+//        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Timber.i("Got activity result of request $requestCode. Result code $resultCode.")
+        if (requestCode == requestCodeSignIn) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            handleSignInResult(task)
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        Timber.i("onResume MainActivity")
-        intent.data?.let { uri ->
-            if ("myapp" == uri.scheme) {
-                Timber.i("Handling auth intent response for uri $uri")
-                client.handleAuthResponse(intent)
-            }
+    private fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) {
+        try {
+            val account = completedTask.getResult(ApiException::class.java)
+            val user = account?.let { a -> Google.readUser(a) }
+            Timber.i("Sign in success.")
+            app.settings.isPrivate = true
+            viewModel.updateUser(user)
+        } catch (e: ApiException) {
+            val str = CommonStatusCodes.getStatusCodeString(e.statusCode)
+            Timber.w(e, "Sign in failed. Code ${e.statusCode}. $str.")
+            viewModel.updateUser(null)
         }
     }
 
@@ -52,4 +73,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun navController() = findNavController(R.id.nav_host_fragment)
 
+    //    override fun onResume() {
+//        super.onResume()
+//        Timber.i("onResume MainActivity")
+//        intent.data?.let { uri ->
+//            if ("myapp" == uri.scheme) {
+//                Timber.i("Handling auth intent response for uri $uri")
+//                client.handleAuthResponse(intent)
+//            }
+//        }
+//    }
 }

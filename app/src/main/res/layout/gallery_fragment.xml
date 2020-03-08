@@ -31,6 +31,7 @@
         android:layout_margin="16dp"
         android:backgroundTint="@color/colorDark"
         android:tint="@color/colorBlueish"
+        android:visibility="gone"
         app:borderWidth="0dp"
         app:srcCompat="@drawable/ic_camera_alt_black_32dp" />
 

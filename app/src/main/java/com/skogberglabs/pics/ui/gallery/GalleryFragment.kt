@@ -1,7 +1,13 @@
 package com.skogberglabs.pics.ui.gallery
 
+import android.app.Activity.RESULT_OK
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.*
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.recyclerview.widget.GridLayoutManager
@@ -16,8 +22,11 @@ import com.skogberglabs.pics.ui.ResourceFragment
 import com.skogberglabs.pics.ui.init
 import kotlinx.android.synthetic.main.gallery_fragment.view.*
 import timber.log.Timber
+import java.io.File
 
 class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate {
+    val RequestImageCapture = 1234
+
     private lateinit var viewModel: GalleryViewModel
     private lateinit var mainViewModel: MainActivityViewModel
 
@@ -25,6 +34,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
     private lateinit var viewManager: GridLayoutManager
 
     private lateinit var client: GoogleSignInClient
+    private var activePic: File? = null
 
     override fun onPic(pic: PicMeta) {
         Timber.i("Clicked pic ${pic.key}")
@@ -74,10 +84,43 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         setHasOptionsMenu(true)
         client = Google.instance.client(requireActivity())
 
+        val hasCamera =
+            requireContext().packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+        if (hasCamera) {
+            view.floating_action_button.visibility = View.VISIBLE
+            view.floating_action_button.setOnClickListener {
+                launchCamera()
+            }
+        }
+    }
+
+    private fun launchCamera() {
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
+            takePictureIntent.resolveActivity(requireContext().packageManager)?.also {
+                val destination = app.camera.createImageFile()
+                activePic = destination
+                val uri = FileProvider.getUriForFile(
+                    requireContext(),
+                    "com.skogberglabs.pics.fileprovider",
+                    destination
+                )
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                startActivityForResult(takePictureIntent, RequestImageCapture)
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Timber.i("Got result with code $requestCode.")
+        if (requestCode == RequestImageCapture && resultCode == RESULT_OK) {
+            val keys = data?.extras?.keySet()
+            val str = keys?.joinToString(", ") ?: ""
+            Timber.i("Got photo of size ${activePic?.length()} with keys $str.")
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        Timber.i("onCreateOptionsMenu ${mainViewModel.signedInUser.value}")
         inflater.inflate(R.menu.profile_menu, menu)
         val activeUser = mainViewModel.signedInUser.value
         // public, login, private, logout
@@ -106,8 +149,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         R.id.login_item -> {
             val signInIntent = client.signInIntent
             requireActivity().startActivityForResult(signInIntent, 111)
-            // This will recreate the activity, and the activity will launch sign in in onCreate
-            //adjustMode(true)
             true
         }
         R.id.private_item -> {

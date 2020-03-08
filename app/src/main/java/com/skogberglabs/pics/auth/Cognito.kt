@@ -18,8 +18,8 @@ import kotlin.coroutines.resumeWithException
  */
 class Cognito {
     companion object {
-        val instance = Cognito()
-        val client: AWSMobileClient get() = AWSMobileClient.getInstance()
+        private val instance = Cognito()
+        private val client: AWSMobileClient get() = AWSMobileClient.getInstance()
     }
 
     //    private val uiScope = CoroutineScope(Dispatchers.Main)

@@ -1,8 +1,11 @@
 package com.skogberglabs.pics
 
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -27,16 +30,32 @@ class MainActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
         val isPrivate = app.settings.isPrivate
         Timber.i("onCreate privately $isPrivate")
-//        val theme = if (isPrivate) R.style.PrivateTheme else R.style.PublicTheme
-//        setTheme(theme)
         setContentView(R.layout.main_activity)
         if (savedInstanceState == null) {
             setupActionBarWithNavController(navController())
         }
         viewModel.signInSilently(applicationContext)
-//        if (isPrivate) {
-//            Cognito.instance.signIn(this)
-//        }
+        viewModel.mode.observe(this, Observer { mode ->
+            Timber.i("Mode $mode")
+            val colors = when (mode) {
+                AppMode.Public -> AppColors(
+                    statusBar = getColor(R.color.colorLightStatusBar),
+                    navigationBar = getColor(R.color.colorLightNavigationBar),
+                    background = getColor(R.color.colorLightBackground),
+                    actionBar = getColor(R.color.colorLightActionBar)
+                )
+                AppMode.Private -> AppColors(
+                    getColor(R.color.colorDarkStatusBar),
+                    getColor(R.color.colorDarkNavigationBar),
+                    getColor(R.color.colorDarkBackground),
+                    getColor(R.color.colorDarkActionBar)
+                )
+            }
+            window.statusBarColor = colors.statusBar
+            window.navigationBarColor = colors.navigationBar
+            supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
+            findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
+        })
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -72,15 +91,4 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun navController() = findNavController(R.id.nav_host_fragment)
-
-    //    override fun onResume() {
-//        super.onResume()
-//        Timber.i("onResume MainActivity")
-//        intent.data?.let { uri ->
-//            if ("myapp" == uri.scheme) {
-//                Timber.i("Handling auth intent response for uri $uri")
-//                client.handleAuthResponse(intent)
-//            }
-//        }
-//    }
 }

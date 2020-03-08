@@ -22,7 +22,6 @@ class PicsApp : Application() {
         val tree = if (BuildConfig.DEBUG) Timber.DebugTree() else NoLogging()
         Timber.plant(tree)
         savedSettings = UserSettings.load(applicationContext)
-        Cognito.instance
     }
 
     class NoLogging : Timber.Tree() {

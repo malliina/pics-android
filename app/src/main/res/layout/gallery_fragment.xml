@@ -29,6 +29,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        app:srcCompat="@drawable/ic_camera_alt_blueish_28dp" />
+        android:backgroundTint="@color/colorDark"
+        android:tint="@color/colorBlueish"
+        app:borderWidth="0dp"
+        app:srcCompat="@drawable/ic_camera_alt_black_32dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

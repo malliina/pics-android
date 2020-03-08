@@ -1,16 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<!--    <color name="colorPrimary">#008577</color>-->
+    <!-- <color name="colorPrimary">#008577</color>-->
     <color name="colorPrimary">#323232</color>
     <color name="colorPrimaryDark">#00574B</color>
-    <!--    <color name="colorAccent">#D81B60</color>-->
+    <!-- <color name="colorAccent">#D81B60</color>-->
     <color name="colorPink">#D81B60</color>
-    <color name="colorAccent">#141414</color>
     <color name="colorBlueish">#007AFF</color>
     <color name="colorRed">#FF0000</color>
     <color name="colorAlmostBlack">#141414</color>
     <color name="colorBlackish">#323232</color>
-    <color name="colorBlack">#000000</color>
-    <color name="colorLight">#EFEFF4</color>
     <color name="colorDivider">#4da1a1a1</color>
+
+    <!-- Common -->
+    <color name="colorAccent">#007AFF</color>
+    <color name="colorDarkish">#B4B4B4</color>
+
+    <!-- Dark -->
+    <color name="colorDark">#323232</color>
+    <color name="colorDarkAccent">#007AFF</color>
+    <color name="colorDarkActionBar">#323232</color>
+    <color name="colorDarkBackground">#323232</color>
+    <color name="colorDarkNavigationBar">#323232</color>
+    <color name="colorDarkStatusBar">#323232</color>
+
+    <!-- Light -->
+    <color name="colorLight">#EFEFF4</color>
+    <color name="colorLightAccent">#007AFF</color>
+    <color name="colorLightActionBar">#464646</color>
+    <color name="colorLightBackground">#EFEFEF</color>
+    <color name="colorLightNavigationBar">#464646</color>
+    <color name="colorLightStatusBar">#464646</color>
 </resources>

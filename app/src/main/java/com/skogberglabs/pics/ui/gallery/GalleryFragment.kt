@@ -1,10 +1,7 @@
 package com.skogberglabs.pics.ui.gallery
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.recyclerview.widget.GridLayoutManager
@@ -21,7 +18,6 @@ import kotlinx.android.synthetic.main.gallery_fragment.view.*
 import timber.log.Timber
 
 class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate {
-
     private lateinit var viewModel: GalleryViewModel
     private lateinit var mainViewModel: MainActivityViewModel
 
@@ -36,7 +32,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        Timber.i("Gallery onViewCreated")
         viewManager = GridLayoutManager(context, 2)
         viewAdapter = PicsAdapter(emptyList(), app.applicationContext, this)
         view.gallery_view.init(viewManager, viewAdapter)
@@ -54,9 +49,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
             viewModel.http.updateToken(token)
             viewModel.loadPics(100, 0)
         }
-//        viewModel.mode.observe(viewLifecycleOwner) { isPrivateMode ->
-//
-//        }
         val ctrl = Controls(null, view.gallery_view, view.message)
         viewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
@@ -141,6 +133,5 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         } else {
             mainViewModel.updateUser(null)
         }
-//        requireActivity().recreate()
     }
 }

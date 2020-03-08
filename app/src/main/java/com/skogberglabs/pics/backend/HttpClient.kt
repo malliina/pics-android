@@ -6,7 +6,6 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
-import com.skogberglabs.pics.auth.Cognito
 import com.skogberglabs.pics.auth.Google
 import com.squareup.moshi.JsonAdapter
 import kotlinx.coroutines.CancellableContinuation
@@ -67,8 +66,6 @@ class HttpClient(ctx: Context) {
         } catch (e: ResponseException) {
             if (e.isTokenExpired()) {
                 Timber.i("JWT is expired. Obtaining a new token and retrying...")
-//                val newToken = Cognito.instance.user().idToken
-                //                token = newToken
                 val userInfo = Google.instance.signInSilently(google)
                 token = userInfo.idToken
                 makeRequest(conf.copy(token = userInfo.idToken))

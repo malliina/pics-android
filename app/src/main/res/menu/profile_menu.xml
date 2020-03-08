@@ -3,19 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/public_gallery_item"
-        android:icon="@drawable/google_icon"
         android:title="@string/public_gallery" />
     <item
         android:id="@+id/login_item"
-        android:icon="@drawable/google_icon"
         android:title="@string/login" />
     <item
         android:id="@+id/private_item"
-        android:icon="@drawable/google_icon"
         android:visible="false"/>
     <item
         android:id="@+id/logout_item"
         android:visible="false"
-        android:icon="@drawable/google_icon"
         android:title="@string/logout" />
 </menu>

@@ -1,6 +1,5 @@
 package com.skogberglabs.pics.backend
 
-import com.amazonaws.mobile.client.results.Token
 import com.android.volley.NetworkResponse
 import com.android.volley.VolleyError
 import com.android.volley.toolbox.HttpHeaderParser
@@ -25,10 +24,10 @@ data class IdToken(val token: String) : Primitive {
 }
 
 data class UserInfo(val email: Email, val idToken: IdToken) {
-    companion object {
-        fun fromAws(token: Token): UserInfo =
-            UserInfo(Email(token.getClaim("email")), IdToken(token.tokenString))
-    }
+//    companion object {
+//        fun fromAws(token: Token): UserInfo =
+//            UserInfo(Email(token.getClaim("email")), IdToken(token.tokenString))
+//    }
 }
 
 data class StorageSize(val bytes: Long) {

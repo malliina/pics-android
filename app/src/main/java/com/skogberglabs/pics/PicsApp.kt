@@ -4,7 +4,6 @@ import android.app.Application
 import com.microsoft.appcenter.AppCenter
 import com.microsoft.appcenter.analytics.Analytics
 import com.microsoft.appcenter.crashes.Crashes
-import com.skogberglabs.pics.auth.Cognito
 import timber.log.Timber
 
 class PicsApp : Application() {

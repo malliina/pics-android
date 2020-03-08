@@ -1,19 +1,14 @@
 package com.skogberglabs.pics.ui.gallery
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.skogberglabs.pics.auth.Cognito
-import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.Outcome
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.PicsHttpClient
 import com.skogberglabs.pics.backend.SingleError
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
 

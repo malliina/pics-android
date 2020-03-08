@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             setupActionBarWithNavController(navController())
         }
-        viewModel.signInSilently(applicationContext)
         viewModel.mode.observe(this, Observer { mode ->
             Timber.i("Mode $mode")
             val colors = when (mode) {
@@ -56,6 +55,7 @@ class MainActivity : AppCompatActivity() {
             supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
             findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
         })
+        viewModel.signInSilently(applicationContext)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

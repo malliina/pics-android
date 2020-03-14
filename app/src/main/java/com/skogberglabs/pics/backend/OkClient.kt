@@ -1,6 +1,8 @@
 package com.skogberglabs.pics.backend
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.*
 import okio.buffer
 import okio.sink
@@ -17,7 +19,7 @@ class OkClient {
 
     private val client = OkHttpClient()
 
-    suspend fun download(url: FullUrl, to: File): StorageSize? {
+    suspend fun download(url: FullUrl, to: File): StorageSize? = withContext(Dispatchers.IO) {
         to.parentFile?.mkdirs()
         to.createNewFile()
         Timber.i("Downloading '$url' to '$to'...")
@@ -26,7 +28,7 @@ class OkClient {
             .build()
         val response = await(client.newCall(request))
         response.use { res ->
-            return if (res.code == 200) {
+            if (res.code == 200) {
                 val responseBody = res.body
                 if (responseBody == null) {
                     Timber.w("Got no response body from '$url'.")

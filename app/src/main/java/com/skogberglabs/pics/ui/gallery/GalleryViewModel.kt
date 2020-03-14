@@ -17,11 +17,11 @@ class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
     val pics: LiveData<Outcome<List<PicMeta>>> = data
     val http: PicsHttpClient get() = PicsHttpClient.get(app.applicationContext)
 
-    private val modeData = MutableLiveData<Boolean>()
-    val mode: LiveData<Boolean> = modeData
+    private val positionData = MutableLiveData<Int>()
+    val position: LiveData<Int> = positionData
 
-    fun changeMode(isPrivate: Boolean) {
-        modeData.postValue(isPrivate)
+    fun updatePosition(pos: Int) {
+        positionData.postValue(pos)
     }
 
     fun loadPics(limit: Int, offset: Int) {
@@ -38,7 +38,8 @@ class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
                 data.value = Outcome.success(newList)
                 Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
             } catch (e: Exception) {
-                if (limit == 0) {
+                val noVisiblePictures = limit == 0
+                if (noVisiblePictures) {
                     data.value = Outcome.error(SingleError.backend("Error."))
                 } else {
                     Timber.e(e, "Failed to load pics from $offset until $until.")

@@ -4,16 +4,14 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.UserInfo
 import com.skogberglabs.pics.ui.map
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class MainActivityViewModel(app: Application) : PicsViewModel(app) {
-    private val uiScope = CoroutineScope(Dispatchers.Main)
     private val google = Google.instance
 
     private val activeUserData = MutableLiveData<UserInfo?>()
@@ -22,7 +20,7 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
         activeUserData.map { if (settings.isPrivate) AppMode.Private else AppMode.Public }
 
     fun signInSilently(ctx: Context) {
-        uiScope.launch {
+        viewModelScope.launch {
             try {
                 val user = google.signInSilently(ctx)
                 Timber.i("Hello, '${user.email}'!")

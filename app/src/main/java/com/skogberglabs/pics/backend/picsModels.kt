@@ -1,11 +1,18 @@
 package com.skogberglabs.pics.backend
 
 import android.graphics.Bitmap
+import android.os.Parcelable
 import com.squareup.moshi.JsonClass
+import kotlinx.android.parcel.Parcelize
 
-data class PicKey(val key: String): Primitive {
-    override val value: String = key
-    override fun toString(): String = key
+@Parcelize
+data class PicKey(val key: String) : Primitive, Parcelable {
+    override val value: String get() = key
+    override fun toString(): String = value
+
+    companion object {
+        val Key = "key"
+    }
 }
 
 @JsonClass(generateAdapter = true)

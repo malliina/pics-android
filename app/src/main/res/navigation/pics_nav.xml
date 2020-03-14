@@ -7,5 +7,24 @@
     <fragment
         android:id="@+id/pics_gallery"
         android:name="com.skogberglabs.pics.ui.gallery.GalleryFragment"
-        tools:layout="@layout/gallery_fragment" />
+        tools:layout="@layout/gallery_fragment">
+        <action
+            android:id="@+id/gallery_to_pic_pager"
+            app:destination="@id/pic_pager"
+            app:enterAnim="@anim/in_from_down"
+            app:exitAnim="@anim/out_to_down"
+            app:popEnterAnim="@anim/in_from_up"
+            app:popExitAnim="@anim/out_to_down" />
+    </fragment>
+    <fragment
+        android:id="@+id/pic_pager"
+        android:name="com.skogberglabs.pics.ui.pic.PicPagerFragment"
+        tools:layout="@layout/pic_pager_fragment">
+        <argument
+            android:name="position"
+            app:argType="integer" />
+        <argument
+            android:name="key"
+            app:argType="com.skogberglabs.pics.backend.PicKey" />
+    </fragment>
 </navigation>

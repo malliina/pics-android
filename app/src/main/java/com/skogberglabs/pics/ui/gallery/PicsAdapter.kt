@@ -9,13 +9,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.skogberglabs.pics.R
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.PicService
+import com.skogberglabs.pics.backend.PicSize
 import kotlinx.android.synthetic.main.image_item.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 interface PicDelegate {
-    fun onPic(pic: PicMeta)
+    fun onPic(pic: PicMeta, position: Int)
 }
 
 class PicsAdapter(
@@ -31,13 +32,13 @@ class PicsAdapter(
         val pic = list[position]
         install(pic, layout.thumbnail_view)
         layout.setOnClickListener {
-            delegate.onPic(pic)
+            delegate.onPic(pic, position)
         }
     }
 
     private fun install(pic: PicMeta, to: ImageView) {
         mainScope.launch {
-            service.fetchBitmap(pic)?.let { bitmap ->
+            service.fetchBitmap(pic, PicSize.Small)?.let { bitmap ->
                 to.setImageBitmap(bitmap)
                 to.scaleType = ImageView.ScaleType.CENTER_CROP
             }

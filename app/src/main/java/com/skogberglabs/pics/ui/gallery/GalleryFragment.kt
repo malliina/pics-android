@@ -3,13 +3,18 @@ package com.skogberglabs.pics.ui.gallery
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.*
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import androidx.core.content.FileProvider
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.skogberglabs.pics.MainActivityViewModel
@@ -25,10 +30,11 @@ import timber.log.Timber
 import java.io.File
 
 class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate {
-    val RequestImageCapture = 1234
+    private val requestImageCapture = 1234
 
-    private lateinit var viewModel: GalleryViewModel
-    private lateinit var mainViewModel: MainActivityViewModel
+    private val viewModel: GalleryViewModel by activityViewModels()
+//    private lateinit var viewModel: GalleryViewModel
+    private val mainViewModel: MainActivityViewModel by activityViewModels()
 
     private lateinit var viewAdapter: PicsAdapter
     private lateinit var viewManager: GridLayoutManager
@@ -36,8 +42,9 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
     private lateinit var client: GoogleSignInClient
     private var activePic: File? = null
 
-    override fun onPic(pic: PicMeta) {
-        Timber.i("Clicked pic ${pic.key}")
+    override fun onPic(pic: PicMeta, position: Int) {
+        val destination = GalleryFragmentDirections.galleryToPicPager(position, pic.key)
+        findNavController().navigate(destination)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -45,9 +52,8 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         viewManager = GridLayoutManager(context, 2)
         viewAdapter = PicsAdapter(emptyList(), app.applicationContext, this)
         view.gallery_view.init(viewManager, viewAdapter)
-        viewModel = ViewModelProvider(this).get(GalleryViewModel::class.java)
-        mainViewModel =
-            activity?.run { ViewModelProvider(this).get(MainActivityViewModel::class.java) }!!
+//        viewModel = ViewModelProvider(this).get(GalleryViewModel::class.java)
+
         mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
             Timber.i("Got $userInfo")
             val message =
@@ -105,7 +111,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
                     destination
                 )
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-                startActivityForResult(takePictureIntent, RequestImageCapture)
+                startActivityForResult(takePictureIntent, requestImageCapture)
             }
         }
     }
@@ -113,7 +119,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Timber.i("Got result with code $requestCode.")
-        if (requestCode == RequestImageCapture && resultCode == RESULT_OK) {
+        if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
             val keys = data?.extras?.keySet()
             val str = keys?.joinToString(", ") ?: ""
             Timber.i("Got photo of size ${activePic?.length()} with keys $str.")

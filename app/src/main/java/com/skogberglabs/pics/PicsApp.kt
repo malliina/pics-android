@@ -4,6 +4,7 @@ import android.app.Application
 import com.microsoft.appcenter.AppCenter
 import com.microsoft.appcenter.analytics.Analytics
 import com.microsoft.appcenter.crashes.Crashes
+import com.skogberglabs.pics.backend.PicService
 import com.skogberglabs.pics.ui.camera.SimpleCamera
 import timber.log.Timber
 
@@ -12,6 +13,8 @@ class PicsApp : Application() {
     val settings: UserSettings get() = savedSettings
     private lateinit var appCamera: SimpleCamera
     val camera: SimpleCamera get() = appCamera
+    private lateinit var service: PicService
+    val pics: PicService get() = service
 
     override fun onCreate() {
         super.onCreate()
@@ -25,6 +28,7 @@ class PicsApp : Application() {
         Timber.plant(tree)
         savedSettings = UserSettings.load(applicationContext)
         appCamera = SimpleCamera(applicationContext)
+        service = PicService(applicationContext)
     }
 
     class NoLogging : Timber.Tree() {

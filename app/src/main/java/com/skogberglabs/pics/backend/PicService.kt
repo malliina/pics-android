@@ -3,7 +3,10 @@ package com.skogberglabs.pics.backend
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 
@@ -16,7 +19,7 @@ class PicService(appContext: Context, private val ok: OkClient = OkClient.defaul
     private val smallDir = appContext.cacheDir.resolve("small")
     private val largeDir = appContext.cacheDir.resolve("large")
 
-    val backgroundScope = CoroutineScope(Dispatchers.IO)
+    private val backgroundScope = CoroutineScope(Dispatchers.IO)
 
     companion object {
         private const val oneMonth = 2678400000L
@@ -47,7 +50,7 @@ class PicService(appContext: Context, private val ok: OkClient = OkClient.defaul
         val dir = if (size == PicSize.Small) smallDir else largeDir
         val destination = dir.resolve(pic.key.key)
         return if (destination.exists()) {
-            Timber.i("Found $destination locally.")
+            Timber.d("Found $destination locally.")
             destination
         } else {
             val url = if (size == PicSize.Small) pic.small else pic.large

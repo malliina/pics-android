@@ -9,14 +9,17 @@ import androidx.lifecycle.Observer
 import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import com.skogberglabs.pics.MainActivity
 import com.skogberglabs.pics.R
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.PicSize
 import com.skogberglabs.pics.backend.Status
 import com.skogberglabs.pics.ui.ResourceFragment
+import com.skogberglabs.pics.ui.SystemUI
 import com.skogberglabs.pics.ui.gallery.GalleryViewModel
 import kotlinx.android.synthetic.main.pic_fragment.view.*
 import kotlinx.android.synthetic.main.pic_pager_fragment.view.*
+import timber.log.Timber
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()
@@ -52,6 +55,7 @@ class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
 
     override fun onDestroyView() {
         view?.pic_pager?.unregisterOnPageChangeCallback(pageChangeCallback)
+        SystemUI.modifyStatusVisibility(true, requireActivity() as MainActivity)
         super.onDestroyView()
     }
 }
@@ -96,5 +100,14 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
         viewModel.pic.observe(viewLifecycleOwner, Observer { pic ->
             view.pic_view.setImageBitmap(pic)
         })
+        modifyStatusVisibility(false)
+        view.setOnClickListener {
+            val showStatus = (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
+            modifyStatusVisibility(!showStatus)
+        }
+    }
+
+    private fun modifyStatusVisibility(visible: Boolean) {
+        SystemUI.modifyStatusVisibility(visible, requireActivity() as MainActivity)
     }
 }

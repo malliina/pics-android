@@ -17,13 +17,6 @@ class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
     val pics: LiveData<Outcome<List<PicMeta>>> = data
     val http: PicsHttpClient get() = PicsHttpClient.get(app.applicationContext)
 
-    private val positionData = MutableLiveData<Int>()
-    val position: LiveData<Int> = positionData
-
-    fun updatePosition(pos: Int) {
-        positionData.postValue(pos)
-    }
-
     fun loadPics(limit: Int, offset: Int) {
         val until = offset + limit
         viewModelScope.launch {

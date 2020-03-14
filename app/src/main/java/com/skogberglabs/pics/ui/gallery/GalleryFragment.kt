@@ -11,8 +11,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.content.FileProvider
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
@@ -33,7 +31,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
     private val requestImageCapture = 1234
 
     private val viewModel: GalleryViewModel by activityViewModels()
-//    private lateinit var viewModel: GalleryViewModel
     private val mainViewModel: MainActivityViewModel by activityViewModels()
 
     private lateinit var viewAdapter: PicsAdapter
@@ -52,10 +49,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         viewManager = GridLayoutManager(context, 2)
         viewAdapter = PicsAdapter(emptyList(), app.applicationContext, this)
         view.gallery_view.init(viewManager, viewAdapter)
-//        viewModel = ViewModelProvider(this).get(GalleryViewModel::class.java)
-
         mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
-            Timber.i("Got $userInfo")
             val message =
                 userInfo?.let { "Signed in as ${it.email}." } ?: getString(R.string.not_signed_in)
             Timber.i(message)

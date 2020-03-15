@@ -35,7 +35,6 @@ class MainActivity : AppCompatActivity() {
             setupActionBarWithNavController(navController())
         }
         viewModel.mode.observe(this, Observer { mode ->
-            Timber.i("Mode $mode")
             val colors = when (mode) {
                 AppMode.Public -> AppColors(
                     statusBar = getColor(R.color.colorLightStatusBar),
@@ -72,6 +71,7 @@ class MainActivity : AppCompatActivity() {
             val user = account?.let { a -> Google.readUser(a) }
             Timber.i("Sign in success.")
             app.settings.isPrivate = true
+            app.settings.privateEmail = user?.email
             viewModel.updateUser(user)
         } catch (e: ApiException) {
             val str = CommonStatusCodes.getStatusCodeString(e.statusCode)

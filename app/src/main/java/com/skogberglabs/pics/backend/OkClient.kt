@@ -4,11 +4,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import okhttp3.RequestBody.Companion.asRequestBody
 import okio.buffer
 import okio.sink
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.lang.Exception
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -47,6 +49,28 @@ class OkClient {
             }
         }
     }
+
+    suspend fun postFile(file: File, to: FullUrl, headers: Map<String, String>): Response =
+        withContext(Dispatchers.IO) {
+            Timber.i("POSTing '$file' to '$to'...")
+            val builder = Request.Builder().url(to.url).post(file.asRequestBody())
+            for ((k, v) in headers) {
+                builder.header(k, v)
+            }
+            val request = builder.build()
+            val response = await(client.newCall(request))
+            response.use { res ->
+                val code = res.code
+                if (res.code >= 200 && res.code <= 400) {
+                    Timber.i("Uploaded '$file' to '$to'.")
+                } else {
+                    val msg = "Upload of '$file' to '$to' returned unexpected response code $code."
+                    Timber.i(msg)
+                    throw Exception(msg)
+                }
+                res
+            }
+        }
 
     private suspend fun await(call: Call) = suspendCancellableCoroutine<Response> { cont ->
         val url = call.request().url.toUrl().toString()

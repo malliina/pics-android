@@ -17,10 +17,12 @@ import kotlin.coroutines.resumeWithException
 
 class HttpClient(ctx: Context) {
     companion object {
+        const val Accept = "Accept"
         const val Authorization = "Authorization"
+        const val Json = "application/json"
 
         fun headers(token: IdToken?): Map<String, String> {
-            val acceptPair = "Accept" to "application/json"
+            val acceptPair = Accept to Json
             return if (token != null) mapOf(
                 Authorization to "Bearer $token",
                 acceptPair

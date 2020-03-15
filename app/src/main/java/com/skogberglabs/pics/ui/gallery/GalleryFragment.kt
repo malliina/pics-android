@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.observe
@@ -20,6 +21,7 @@ import com.skogberglabs.pics.R
 import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.Status
+import com.skogberglabs.pics.backend.UploadService
 import com.skogberglabs.pics.ui.Controls
 import com.skogberglabs.pics.ui.ResourceFragment
 import com.skogberglabs.pics.ui.init
@@ -97,15 +99,25 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
     private fun launchCamera() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
             takePictureIntent.resolveActivity(requireContext().packageManager)?.also {
-                val destination = app.camera.createImageFile()
-                activePic = destination
-                val uri = FileProvider.getUriForFile(
-                    requireContext(),
-                    "com.skogberglabs.pics.fileprovider",
-                    destination
-                )
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-                startActivityForResult(takePictureIntent, requestImageCapture)
+                val file = app.camera.createImageFile(app.settings.activeUser)
+                file?.let { destination ->
+                    activePic = destination
+                    val uri = FileProvider.getUriForFile(
+                        requireContext(),
+                        "com.skogberglabs.pics.fileprovider",
+                        destination
+                    )
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                    startActivityForResult(takePictureIntent, requestImageCapture)
+                }
+                if (file == null) {
+                    Toast.makeText(
+                            requireContext(),
+                            "Failed to prepare camera.",
+                            Toast.LENGTH_SHORT
+                        )
+                        .show()
+                }
             }
         }
     }
@@ -116,7 +128,16 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
             val keys = data?.extras?.keySet()
             val str = keys?.joinToString(", ") ?: ""
-            Timber.i("Got photo of size ${activePic?.length()} with keys $str.")
+            activePic?.let { file ->
+                Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
+                val uploadIntent = Intent().apply {
+                    mainViewModel.signedInUser.value?.let { user ->
+                        putExtra(UploadService.EmailKey, user.email.value)
+                        putExtra(UploadService.TokenKey, user.idToken.value)
+                    }
+                }
+                UploadService.enqueue(requireContext(), uploadIntent)
+            }
         }
     }
 

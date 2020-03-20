@@ -16,6 +16,13 @@ data class PicKey(val key: String) : Primitive, Parcelable {
 }
 
 @JsonClass(generateAdapter = true)
+data class PicKeys(val keys: List<PicKey>) {
+    companion object {
+        val adapter = Json.moshi.adapter(PicKeys::class.java)
+    }
+}
+
+@JsonClass(generateAdapter = true)
 data class PicMeta(
     val key: PicKey,
     val added: Long,
@@ -26,6 +33,10 @@ data class PicMeta(
 )
 
 @JsonClass(generateAdapter = true)
-data class Pics(val pics: List<PicMeta>)
+data class Pics(val pics: List<PicMeta>) {
+    companion object {
+        val adapter = Json.moshi.adapter(Pics::class.java)
+    }
+}
 
 data class BitmapPic(val meta: PicMeta, val small: Bitmap)

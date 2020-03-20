@@ -1,12 +1,11 @@
 package com.skogberglabs.pics.backend
 
 import android.content.Context
+import okhttp3.MediaType.Companion.toMediaType
 
 class PicsHttpClient(val http: HttpClient) {
     companion object {
-        private val picsVersion10 = "application/vnd.pics.v10+json"
-
-        private val picsAdapter = Json.moshi.adapter(Pics::class.java)
+        private val picsVersion10 = "application/vnd.pics.v10+json".toMediaType()
 
         @Volatile
         private var instance: PicsHttpClient? = null
@@ -26,6 +25,6 @@ class PicsHttpClient(val http: HttpClient) {
     suspend fun pics(limit: Int, offset: Int): Pics =
         http.getJson(
             FullUrl.https("pics.malliina.com", "/pics?limit=$limit&offset=$offset"),
-            picsAdapter
+            Pics.adapter
         )
 }

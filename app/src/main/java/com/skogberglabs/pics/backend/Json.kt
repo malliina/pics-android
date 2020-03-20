@@ -54,3 +54,4 @@ fun <T> JsonAdapter<T>.readUrl(json: String, url: FullUrl): T {
     return this.fromJson(json)
         ?: throw JsonDataException("Moshi returned null for response from '$url': '$json'.")
 }
+

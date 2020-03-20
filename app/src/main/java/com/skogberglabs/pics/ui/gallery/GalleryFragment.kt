@@ -60,6 +60,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
             val token = if (isPrivate) userInfo?.idToken else null
             viewModel.http.updateToken(token)
             viewModel.loadPics(100, 0)
+            viewModel.reconnect()
         }
         val ctrl = Controls(null, view.gallery_view, view.message)
         viewModel.pics.observe(viewLifecycleOwner) { outcome ->
@@ -96,6 +97,16 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.reconnect()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.disconnect()
+    }
+
     private fun launchCamera() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
             takePictureIntent.resolveActivity(requireContext().packageManager)?.also {
@@ -127,7 +138,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         Timber.i("Got result with code $requestCode.")
         if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
             val keys = data?.extras?.keySet()
-            val str = keys?.joinToString(", ") ?: ""
             activePic?.let { file ->
                 Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
                 val uploadIntent = Intent().apply {

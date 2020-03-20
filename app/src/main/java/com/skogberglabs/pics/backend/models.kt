@@ -131,4 +131,11 @@ data class Outcome<out T>(val status: Status, val data: T?, val error: SingleErr
         fun error(err: SingleError): Outcome<Nothing> = Outcome(Status.Error, null, err)
         fun loading(): Outcome<Nothing> = Outcome(Status.Loading, null, null)
     }
+
+    // Not good due to Loading status
+    fun <U> map(f: (t: T) -> U): Outcome<U> = when (status) {
+        Status.Success -> Outcome.success(data?.let(f)!!)
+        Status.Error -> error(error!!)
+        Status.Loading -> loading()
+    }
 }

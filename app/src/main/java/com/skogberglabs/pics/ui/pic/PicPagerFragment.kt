@@ -19,7 +19,6 @@ import com.skogberglabs.pics.ui.SystemUI
 import com.skogberglabs.pics.ui.gallery.GalleryViewModel
 import kotlinx.android.synthetic.main.pic_fragment.view.*
 import kotlinx.android.synthetic.main.pic_pager_fragment.view.*
-import timber.log.Timber
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()

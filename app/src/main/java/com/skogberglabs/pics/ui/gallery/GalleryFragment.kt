@@ -29,7 +29,7 @@ import kotlinx.android.synthetic.main.gallery_fragment.view.*
 import timber.log.Timber
 import java.io.File
 
-class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate {
+class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDelegate {
     private val requestImageCapture = 1234
 
     private val viewModel: GalleryViewModel by activityViewModels()
@@ -40,8 +40,10 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
 
     private lateinit var client: GoogleSignInClient
     private var activePic: File? = null
+    // Hack used to determine whether or not to animate collection updates
+    private var initial = true
 
-    override fun onPic(pic: PicMeta, position: Int) {
+    override fun onPicClicked(pic: PicMeta, position: Int) {
         val destination = GalleryFragmentDirections.galleryToPicPager(position, pic.key)
         findNavController().navigate(destination)
     }
@@ -52,6 +54,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         viewAdapter = PicsAdapter(emptyList(), app.applicationContext, this)
         view.gallery_view.init(viewManager, viewAdapter)
         mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
+            Timber.i("$userInfo")
             val message =
                 userInfo?.let { "Signed in as ${it.email}." } ?: getString(R.string.not_signed_in)
             Timber.i(message)
@@ -60,6 +63,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
             val token = if (isPrivate) userInfo?.idToken else null
             viewModel.http.updateToken(token)
             viewModel.loadPics(100, 0)
+            Timber.i("Reconnecting via onViewCreated")
             viewModel.reconnect()
         }
         val ctrl = Controls(null, view.gallery_view, view.message)
@@ -67,12 +71,29 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
             when (outcome.status) {
                 Status.Success -> {
                     outcome.data?.let { list ->
-                        if (list.isEmpty()) {
+                        val pics = list.pics
+                        if (pics.isEmpty()) {
                             ctrl.display(getString(R.string.no_pics))
                         } else {
                             ctrl.showList()
-                            viewAdapter.list = list
-                            viewAdapter.notifyDataSetChanged()
+                            viewAdapter.list = pics
+                            // Animates collection updates
+                            val removed = list.removedIndices
+                            if (!initial && (list.prependedCount > 0 || removed.isNotEmpty())) {
+                                val isScrolledToTop = viewManager.findFirstVisibleItemPosition() == 0
+                                Timber.i("Animated update")
+                                viewAdapter.notifyItemRangeInserted(0, list.prependedCount)
+                                list.removedIndices.forEach { idx ->
+                                    viewAdapter.notifyItemRemoved(idx)
+                                }
+                                if (isScrolledToTop) {
+                                    viewManager.scrollToPosition(0)
+                                }
+                            } else {
+                                initial = false
+                                Timber.i("Reloading all")
+                                viewAdapter.notifyDataSetChanged()
+                            }
                         }
                     }
                 }
@@ -95,11 +116,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
                 launchCamera()
             }
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        viewModel.reconnect()
     }
 
     override fun onStop() {
@@ -137,16 +153,9 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicDelegate
         super.onActivityResult(requestCode, resultCode, data)
         Timber.i("Got result with code $requestCode.")
         if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
-            val keys = data?.extras?.keySet()
             activePic?.let { file ->
                 Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
-                val uploadIntent = Intent().apply {
-                    mainViewModel.signedInUser.value?.let { user ->
-                        putExtra(UploadService.EmailKey, user.email.value)
-                        putExtra(UploadService.TokenKey, user.idToken.value)
-                    }
-                }
-                UploadService.enqueue(requireContext(), uploadIntent)
+                UploadService.enqueue(requireContext(), mainViewModel.signedInUser.value)
             }
         }
     }

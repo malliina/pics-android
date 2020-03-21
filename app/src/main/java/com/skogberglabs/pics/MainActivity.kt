@@ -15,6 +15,7 @@ import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.tasks.Task
 import com.skogberglabs.pics.auth.Google
+import com.skogberglabs.pics.backend.UploadService
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
@@ -53,6 +54,9 @@ class MainActivity : AppCompatActivity() {
             window.navigationBarColor = colors.navigationBar
             supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
             findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
+        })
+        viewModel.signedInUser.observe(this, Observer { user ->
+            UploadService.enqueue(applicationContext, user)
         })
         viewModel.signInSilently(applicationContext)
     }

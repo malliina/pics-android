@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.UserInfo
+import com.skogberglabs.pics.ui.distinctUntilChanged
 import com.skogberglabs.pics.ui.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -15,7 +16,7 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
     private val google = Google.instance
 
     private val activeUserData = MutableLiveData<UserInfo?>()
-    val signedInUser: LiveData<UserInfo?> = activeUserData
+    val signedInUser: LiveData<UserInfo?> = activeUserData.distinctUntilChanged()
     val mode: LiveData<AppMode> =
         activeUserData.map { if (settings.isPrivate) AppMode.Private else AppMode.Public }
 

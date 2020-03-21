@@ -44,14 +44,19 @@ class OkClient {
         executeNoContent(request)
     }
 
-    suspend fun <Req, Res> postJson(url: FullUrl, body: Req, writer: JsonAdapter<Req>, reader: JsonAdapter<Res>): Res {
+    suspend fun <Req, Res> postJson(
+        url: FullUrl,
+        body: Req,
+        writer: JsonAdapter<Req>,
+        reader: JsonAdapter<Res>
+    ): Res {
         val requestBody = writer.toJson(body).toRequestBody(MediaTypeJson)
         return executeJson(newRequest(url).post(requestBody).build(), reader)
     }
 
     suspend fun postFile(file: File, to: FullUrl, headers: Map<String, String>): Response =
         withContext(Dispatchers.IO) {
-            Timber.i("POSTing '$file' to '$to'...")
+            Timber.i("POSTing ${file.length()} bytes from '$file' to '$to'...")
             val builder = newRequest(to).post(file.asRequestBody())
             for ((k, v) in headers) {
                 builder.header(k, v)
@@ -111,10 +116,12 @@ class OkClient {
                 consume(response)
             } else {
                 val body = response.body
-                if(body != null) {
+                if (body != null) {
                     val errors = Json.instance.errorsAdapter.fromJson(body.source())
-                    val isTokenExpired = errors?.let { err -> err.errors.any { e -> e.key == "token_expired" } } ?: false
-                    if(isTokenExpired) {
+                    val isTokenExpired =
+                        errors?.let { err -> err.errors.any { e -> e.key == "token_expired" } }
+                            ?: false
+                    if (isTokenExpired) {
 
                     }
                 }

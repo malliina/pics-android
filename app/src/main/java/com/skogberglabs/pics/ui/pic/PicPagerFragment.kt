@@ -41,7 +41,7 @@ class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
         currentPosition = savedInstanceState?.getInt(PicFragment.positionKey) ?: args.position
         pager.registerOnPageChangeCallback(pageChangeCallback)
         galleryViewModel.pics.observe(viewLifecycleOwner, Observer { pics ->
-            adapter.pics = pics.data ?: emptyList()
+            adapter.pics = pics.data?.pics ?: emptyList()
             pager.setCurrentItem(currentPosition, false)
             adapter.notifyDataSetChanged()
         })
@@ -88,7 +88,7 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
                 Status.Success -> {
                     arguments?.getInt(positionKey)?.let { pos ->
                         outcome.data?.let { pics ->
-                            viewModel.load(pics[pos], PicSize.Large)
+                            viewModel.load(pics.pics[pos], PicSize.Large)
                         }
                     }
                 }

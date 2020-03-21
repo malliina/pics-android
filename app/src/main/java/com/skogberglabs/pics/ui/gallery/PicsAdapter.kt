@@ -15,14 +15,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-interface PicDelegate {
-    fun onPic(pic: PicMeta, position: Int)
+interface PicClickDelegate {
+    fun onPicClicked(pic: PicMeta, position: Int)
 }
 
 class PicsAdapter(
     initial: List<PicMeta>,
     context: Context,
-    private val delegate: PicDelegate
+    private val delegate: PicClickDelegate
 ) : BasicAdapter<PicMeta>(initial, R.layout.image_item) {
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private val service = PicService(context)
@@ -32,7 +32,7 @@ class PicsAdapter(
         val pic = list[position]
         install(pic, layout.thumbnail_view)
         layout.setOnClickListener {
-            delegate.onPic(pic, position)
+            delegate.onPicClicked(pic, position)
         }
     }
 

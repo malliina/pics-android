@@ -54,6 +54,7 @@ class PicsSocket(private val url: FullUrl, val delegate: PicsSocketDelegate) {
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                Timber.i("Got '$text'.")
                 ServerEvent.adapter.fromJson(text)?.let { event ->
                     when (event) {
                         ServerEvent.added -> {

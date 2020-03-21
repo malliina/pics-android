@@ -16,8 +16,6 @@ class SpacingDecorator(private val spacing: Int, private val spanCount: Int) :
         val column: Int = position % spanCount
         outRect.left = column * spacing / spanCount
         outRect.right = spacing - (column + 1) * spacing / spanCount
-        if (position >= spanCount) {
-            outRect.top = spacing
-        }
+        outRect.bottom = spacing
     }
 }

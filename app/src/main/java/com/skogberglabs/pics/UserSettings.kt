@@ -30,8 +30,6 @@ class UserSettings(private val prefs: SharedPreferences) {
         val isPrivateAdapter: JsonAdapter<IsPrivate> = Json.moshi.adapter(IsPrivate::class.java)
     }
 
-    val activeUser: Email? get() = if (isPrivate) privateEmail else null
-
     private val privateEmailKey = "private_email"
     var privateEmail: Email?
         set(value) = save(PrivateEmail(value), emailAdapter, privateEmailKey)

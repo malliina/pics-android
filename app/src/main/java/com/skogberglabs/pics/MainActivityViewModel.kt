@@ -17,6 +17,8 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
 
     private val activeUserData = MutableLiveData<UserInfo?>()
     val signedInUser: LiveData<UserInfo?> = activeUserData.distinctUntilChanged()
+    val effectiveUser: LiveData<UserInfo?> = activeUserData.map { u -> if (settings.isPrivate) u else null }.distinctUntilChanged()
+
     val mode: LiveData<AppMode> =
         activeUserData.map { if (settings.isPrivate) AppMode.Private else AppMode.Public }
 

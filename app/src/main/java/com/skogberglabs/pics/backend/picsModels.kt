@@ -40,5 +40,3 @@ data class Pics(val pics: List<PicMeta>) {
         val adapter: JsonAdapter<Pics> = Json.moshi.adapter(Pics::class.java)
     }
 }
-
-data class BitmapPic(val meta: PicMeta, val small: Bitmap)

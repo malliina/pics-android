@@ -85,19 +85,23 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                 viewModel.loadPics(itemsPerLoad, itemCount)
             }
         }
-        mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
-            Timber.i("$userInfo")
+        mainViewModel.effectiveUser.observe(viewLifecycleOwner) { userInfo ->
             val message =
                 userInfo?.let { "Signed in as ${it.email}." } ?: getString(R.string.not_signed_in)
             Timber.i(message)
             view.message.text = message
             activity?.invalidateOptionsMenu()
-            val token = if (isPrivate) userInfo?.idToken else null
-            app.http.token = token
-            viewModel.loadPics(100, 0)
+            val user = if (isPrivate) userInfo else null
+            viewModel.updateUser(user)
             Timber.i("Reconnecting via onViewCreated")
             viewModel.reconnect()
         }
+//        mainViewModel.activeUser.observe(viewLifecycleOwner) { userInfo ->
+//            Timber.i("Effective $userInfo")
+//        }
+//        mainViewModel.mode.observe(viewLifecycleOwner) { mode ->
+//            viewModel.loadPics(100, 0)
+//        }
         val ctrl = Controls(null, view.gallery_view, view.message)
         viewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
@@ -121,7 +125,10 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                                     list.removedIndices.forEach { idx ->
                                         viewAdapter.notifyItemRemoved(idx)
                                     }
-                                    viewAdapter.notifyItemRangeInserted(previousSize, list.appendedCount)
+                                    viewAdapter.notifyItemRangeInserted(
+                                        previousSize,
+                                        list.appendedCount
+                                    )
                                     if (isScrolledToTop) {
                                         viewManager.scrollToPosition(0)
                                     }
@@ -249,6 +256,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     }
 
     private fun adjustMode(isPrivate: Boolean) {
+//        viewModel.clearPics()
         app.settings.isPrivate = isPrivate
         if (isPrivate) {
             mainViewModel.signInSilently(app.applicationContext)

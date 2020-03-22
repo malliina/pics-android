@@ -7,8 +7,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.skogberglabs.pics.ui.gallery.SpacingDecorator
 
-fun <T, U> MutableLiveData<T>.map(f: (t: T) -> U): LiveData<U> = Transformations.map(this, f)
-fun <T> MutableLiveData<T>.distinctUntilChanged(): LiveData<T> = Transformations.distinctUntilChanged(this)
+fun <T, U> LiveData<T>.map(f: (t: T) -> U): LiveData<U> = Transformations.map(this, f)
+fun <T> LiveData<T>.distinctUntilChanged(): LiveData<T> = Transformations.distinctUntilChanged(this)
 
 fun <VH : RecyclerView.ViewHolder> RecyclerView.init(
     layout: GridLayoutManager,

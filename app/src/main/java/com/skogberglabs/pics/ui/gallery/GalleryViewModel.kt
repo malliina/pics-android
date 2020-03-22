@@ -26,6 +26,20 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
 
     private val socket: PicsSocket = PicsSocket.build(GalleryPicsDelegate())
 
+    private var initial: Boolean = true
+    private var latestUser: UserInfo? = null
+
+    fun updateUser(user: UserInfo?) {
+        val isChanged = latestUser?.email != user?.email
+        Timber.i("Was ${latestUser?.email}, is ${user?.email}, changed $isChanged, initial $initial")
+        latestUser = user
+        picsApp.http.token = user?.idToken
+        if (isChanged || initial) {
+            loadPics(100, 0)
+        }
+        initial = false
+    }
+
     fun loadPics(limit: Int, offset: Int) {
         val until = offset + limit
         viewModelScope.launch {
@@ -37,7 +51,8 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                 val newList =
                     if (offset == 0) items
                     else (data.value?.data?.pics ?: emptyList()) + items
-                data.value = Outcome.success(PicsList(newList, 0, items.size, emptyList()))
+                val list = PicsList(newList, 0, if (offset == 0) 0 else items.size, emptyList())
+                data.value = Outcome.success(list)
                 Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
             } catch (e: Exception) {
                 val noVisiblePictures = limit == 0
@@ -63,7 +78,15 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     val uri = picsApp.files.uriForfile(localCopy)
                     val url = FullUrl.build(uri.toString())!!
                     val local =
-                        PicMeta(key, System.currentTimeMillis() / 1000, url, url, url, url, key.value)
+                        PicMeta(
+                            key,
+                            System.currentTimeMillis() / 1000,
+                            url,
+                            url,
+                            url,
+                            url,
+                            key.value
+                        )
                     val list = PicsList(listOf(local) + existing, 1, 0, emptyList(), false)
                     data.postValue(Outcome.success(list))
                     if ((user?.email == null && operation.email == null) || (user?.email == operation.email)) {

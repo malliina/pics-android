@@ -1,7 +1,11 @@
 package com.skogberglabs.pics.ui.pic
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -19,6 +23,11 @@ import com.skogberglabs.pics.ui.SystemUI
 import com.skogberglabs.pics.ui.gallery.GalleryViewModel
 import kotlinx.android.synthetic.main.pic_fragment.view.*
 import kotlinx.android.synthetic.main.pic_pager_fragment.view.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.lang.Exception
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()
@@ -76,6 +85,7 @@ class PicFragmentAdapter(var pics: List<PicMeta>, pager: Fragment) :
 class PicFragment : ResourceFragment(R.layout.pic_fragment) {
     companion object {
         const val positionKey = "position"
+        private val mainScope = CoroutineScope(Dispatchers.Main)
     }
 
     private val viewModel: PicViewModel by viewModels()
@@ -97,12 +107,39 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
             }
         })
         viewModel.pic.observe(viewLifecycleOwner, Observer { pic ->
-            view.pic_view.setImageBitmap(pic)
+            view.pic_view.setImageBitmap(pic.bitmap)
         })
         modifyStatusVisibility(false)
         view.setOnClickListener {
-            val showStatus = (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
+            val showStatus =
+                (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
             modifyStatusVisibility(!showStatus)
+        }
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.pic_actions_menu, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.delete_pic_item -> {
+            try {
+                mainScope.launch {
+                    viewModel.pic.value?.pic?.key?.let { key ->
+                        val code = viewModel.delete(key)
+                        activity?.onBackPressed()
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to delete image.")
+                Toast.makeText(requireContext(), "Failed to delete image.", Toast.LENGTH_SHORT)
+                    .show()
+            }
+            true
+        }
+        else -> {
+            super.onOptionsItemSelected(item)
         }
     }
 

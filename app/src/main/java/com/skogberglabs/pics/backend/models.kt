@@ -1,12 +1,7 @@
 package com.skogberglabs.pics.backend
 
-import com.android.volley.NetworkResponse
-import com.android.volley.VolleyError
-import com.android.volley.toolbox.HttpHeaderParser
 import com.squareup.moshi.JsonClass
 import org.json.JSONException
-import timber.log.Timber
-import java.nio.charset.Charset
 import java.util.regex.Pattern
 
 interface Primitive {
@@ -91,32 +86,6 @@ data class Errors(val errors: List<SingleError>) {
         fun input(message: String) = single("input", message)
         fun single(key: String, message: String): Errors = Errors(listOf(SingleError(key, message)))
     }
-}
-
-data class ResponseException(val error: VolleyError, val req: RequestConf) :
-    Exception("Invalid response", error.cause) {
-    private val url = req.url
-    private val response: NetworkResponse? = error.networkResponse
-
-    fun errors(): Errors {
-        return if (response != null) {
-            val response = response
-            try {
-                val charset =
-                    Charset.forName(HttpHeaderParser.parseCharset(response.headers, "UTF-8"))
-                val str = String(response.data, charset)
-                Json.instance.errorsAdapter.read(str)
-            } catch (e: Exception) {
-                val msg = "Unable to parse response from '$url'."
-                Timber.e(e, msg)
-                Errors.input(msg)
-            }
-        } else {
-            Errors.single("network", "Network error from '$url'.")
-        }
-    }
-
-    fun isTokenExpired(): Boolean = errors().errors.any { e -> e.key == "token_expired" }
 }
 
 enum class Status {

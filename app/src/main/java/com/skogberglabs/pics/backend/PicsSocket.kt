@@ -1,5 +1,7 @@
 package com.skogberglabs.pics.backend
 
+import com.skogberglabs.pics.backend.OkClient.Companion.Accept
+import com.skogberglabs.pics.backend.OkClient.Companion.Authorization
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass
 import okhttp3.*
@@ -28,7 +30,7 @@ interface PicsSocketDelegate {
 class PicsSocket(private val url: FullUrl, val delegate: PicsSocketDelegate) {
     companion object {
         fun build(delegate: PicsSocketDelegate): PicsSocket =
-            PicsSocket(FullUrl("wss", "pics.malliina.com", "/sockets"), delegate)
+            PicsSocket(FullUrl("wss", EnvConf.Host, "/sockets"), delegate)
     }
 
     val http = OkHttpClient()
@@ -38,9 +40,9 @@ class PicsSocket(private val url: FullUrl, val delegate: PicsSocketDelegate) {
         close()
         socket = null
         val builder = Request.Builder().url(url.url)
-            .header(HttpClient.Accept, HttpClient.Json)
+            .header(Accept, PicsOkClient.PicsVersion10)
         token?.let { jwt ->
-            builder.header(HttpClient.Authorization, "Bearer $jwt")
+            builder.header(Authorization, "Bearer $jwt")
         }
         val req = builder.build()
         Timber.i("Connecting to ${url}...")

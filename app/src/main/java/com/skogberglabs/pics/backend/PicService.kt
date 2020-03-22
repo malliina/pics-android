@@ -15,7 +15,7 @@ enum class PicSize {
     Large
 }
 
-class PicService(appContext: Context, private val ok: OkClient = OkClient.default) {
+class PicService(appContext: Context, private val ok: OkClient) {
     private val smallDir = appContext.cacheDir.resolve("small")
     private val largeDir = appContext.cacheDir.resolve("large")
 

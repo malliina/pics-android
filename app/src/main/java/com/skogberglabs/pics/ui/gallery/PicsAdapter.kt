@@ -1,14 +1,13 @@
 package com.skogberglabs.pics.ui.gallery
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
+import com.skogberglabs.pics.PicsApp
 import com.skogberglabs.pics.R
 import com.skogberglabs.pics.backend.PicMeta
-import com.skogberglabs.pics.backend.PicService
 import com.skogberglabs.pics.backend.PicSize
 import kotlinx.android.synthetic.main.image_item.view.*
 import kotlinx.coroutines.CoroutineScope
@@ -21,11 +20,11 @@ interface PicClickDelegate {
 
 class PicsAdapter(
     initial: List<PicMeta>,
-    context: Context,
+    app: PicsApp,
     private val delegate: PicClickDelegate
 ) : BasicAdapter<PicMeta>(initial, R.layout.image_item) {
     private val mainScope = CoroutineScope(Dispatchers.Main)
-    private val service = PicService(context)
+    private val service = app.pics
 
     override fun onBindViewHolder(holder: PicHolder, position: Int) {
         val layout = holder.layout

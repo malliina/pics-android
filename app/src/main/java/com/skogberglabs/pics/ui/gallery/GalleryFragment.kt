@@ -51,7 +51,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewManager = GridLayoutManager(context, 2)
-        viewAdapter = PicsAdapter(emptyList(), app.applicationContext, this)
+        viewAdapter = PicsAdapter(emptyList(), app, this)
         view.gallery_view.init(viewManager, viewAdapter)
         mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
             Timber.i("$userInfo")
@@ -61,7 +61,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
             view.message.text = message
             activity?.invalidateOptionsMenu()
             val token = if (isPrivate) userInfo?.idToken else null
-            viewModel.http.updateToken(token)
+            app.http.token = token
             viewModel.loadPics(100, 0)
             Timber.i("Reconnecting via onViewCreated")
             viewModel.reconnect()

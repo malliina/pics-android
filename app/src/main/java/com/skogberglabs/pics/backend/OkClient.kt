@@ -1,5 +1,7 @@
 package com.skogberglabs.pics.backend
 
+import android.content.Context
+import com.skogberglabs.pics.auth.Google
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonDataException
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +16,6 @@ import okio.sink
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
-import java.lang.Exception
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -23,46 +24,74 @@ open class HttpException(message: String, val request: Request) : Exception(mess
     val url = FullUrl.build(request.url.toString())
 }
 
-class StatusException(val code: Int, request: Request) :
+open class StatusException(val code: Int, request: Request) :
     HttpException("Invalid status code $code.", request)
+
+class ErrorsException(val errors: Errors, code: Int, request: Request) :
+    StatusException(code, request) {
+    val isTokenExpired: Boolean get() = errors.errors.any { e -> e.key == "token_expired" }
+}
 
 class BodyException(request: Request) : HttpException("Invalid HTTP response body.", request)
 
-class OkClient {
+interface TokenSource {
+    suspend fun fetchToken(): IdToken?
+
     companion object {
-        val default = OkClient()
+        val empty = object : TokenSource {
+            override suspend fun fetchToken(): IdToken? = null
+        }
+    }
+}
+
+class GoogleTokenSource(appContext: Context) : TokenSource {
+    private val google = Google.instance.client(appContext)
+
+    override suspend fun fetchToken(): IdToken? = try {
+        Google.instance.signInSilently(google).idToken
+    } catch (e: Exception) {
+        Timber.w(e, "Failed to fetch token")
+        null
+    }
+}
+
+class OkClient(private val tokenSource: TokenSource) {
+    companion object {
         val MediaTypeJson = "application/json".toMediaType()
+
+        const val Accept = "Accept"
+        const val Authorization = "Authorization"
     }
 
     private val client = OkHttpClient()
 
-    suspend fun <T> getJson(url: FullUrl, adapter: JsonAdapter<T>): T? =
-        executeJson(newRequest(url).build(), adapter)
+    suspend fun <T> getJson(
+        url: FullUrl,
+        headers: Map<String, String>,
+        adapter: JsonAdapter<T>
+    ): T = executeJson(newRequest(url, headers).build(), adapter)
 
-    suspend fun delete(url: FullUrl) = withContext(Dispatchers.IO) {
-        val request = newRequest(url).delete().build()
+    suspend fun delete(url: FullUrl, headers: Map<String, String>) = withContext(Dispatchers.IO) {
+        val request = newRequest(url, headers).delete().build()
         executeNoContent(request)
     }
 
     suspend fun <Req, Res> postJson(
         url: FullUrl,
         body: Req,
+        headers: Map<String, String>,
         writer: JsonAdapter<Req>,
         reader: JsonAdapter<Res>
     ): Res {
         val requestBody = writer.toJson(body).toRequestBody(MediaTypeJson)
-        return executeJson(newRequest(url).post(requestBody).build(), reader)
+        return executeJson(newRequest(url, headers).post(requestBody).build(), reader)
     }
 
     suspend fun postFile(file: File, to: FullUrl, headers: Map<String, String>): Response =
         withContext(Dispatchers.IO) {
             Timber.i("POSTing ${file.length()} bytes from '$file' to '$to'...")
-            val builder = newRequest(to).post(file.asRequestBody())
-            for ((k, v) in headers) {
-                builder.header(k, v)
-            }
-            val request = builder.build()
-            execute(request) { response ->
+            val builder = newRequest(to, headers).post(file.asRequestBody())
+            execute(builder.build()) { response ->
                 Timber.i("Uploaded '$file' to '$to'.")
                 response
             }
@@ -72,7 +101,7 @@ class OkClient {
         to.parentFile?.mkdirs()
         to.createNewFile()
         Timber.i("Downloading '$url' to '$to'...")
-        val request = newRequest(url).build()
+        val request = newRequest(url, emptyMap()).build()
         execute(request) { response ->
             if (response.code == 200) {
                 val responseBody = response.body
@@ -94,7 +123,13 @@ class OkClient {
         }
     }
 
-    private fun newRequest(url: FullUrl) = Request.Builder().url(url.url)
+    private fun newRequest(url: FullUrl, headers: Map<String, String>): Request.Builder {
+        val builder = Request.Builder().url(url.url)
+        for ((k, v) in headers) {
+            builder.header(k, v)
+        }
+        return builder
+    }
 
     private suspend fun executeNoContent(request: Request) = execute(request) { r -> r.code }
 
@@ -109,7 +144,26 @@ class OkClient {
             }
         }
 
-    private suspend fun <T> execute(request: Request, consume: (r: Response) -> T): T {
+    private suspend fun <T> execute(request: Request, consume: (r: Response) -> T): T =
+        try {
+            executeOnce(request, consume)
+        } catch (e: ErrorsException) {
+            if (e.isTokenExpired) {
+                val newToken = tokenSource.fetchToken()
+                if (newToken != null) {
+                    val newAttempt =
+                        request.newBuilder().header(Authorization, "Bearer $newToken").build()
+                    executeOnce(newAttempt, consume)
+                } else {
+                    Timber.w("Token expired and unable to renew token. Failing request to '${request.url}'.")
+                    throw e
+                }
+            } else {
+                throw e
+            }
+        }
+
+    private suspend fun <T> executeOnce(request: Request, consume: (r: Response) -> T): T {
         val response = await(client.newCall(request))
         return response.use {
             if (response.isSuccessful) {
@@ -117,12 +171,8 @@ class OkClient {
             } else {
                 val body = response.body
                 if (body != null) {
-                    val errors = Json.instance.errorsAdapter.fromJson(body.source())
-                    val isTokenExpired =
-                        errors?.let { err -> err.errors.any { e -> e.key == "token_expired" } }
-                            ?: false
-                    if (isTokenExpired) {
-
+                    Json.instance.errorsAdapter.fromJson(body.source())?.let { errors ->
+                        throw ErrorsException(errors, response.code, request)
                     }
                 }
                 throw StatusException(response.code, request)

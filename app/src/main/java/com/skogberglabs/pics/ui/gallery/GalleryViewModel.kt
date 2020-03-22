@@ -1,21 +1,20 @@
 package com.skogberglabs.pics.ui.gallery
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.skogberglabs.pics.backend.*
+import com.skogberglabs.pics.ui.AppViewModel
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import timber.log.Timber
 
 data class PicsList(val pics: List<PicMeta>, val prependedCount: Int, val removedIndices: List<Int>)
 
-class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
+class GalleryViewModel(app: Application) : AppViewModel(app) {
     private val data = MutableLiveData<Outcome<PicsList>>()
     val pics: LiveData<Outcome<PicsList>> = data
-    val http: PicsHttpClient get() = PicsHttpClient.get(app.applicationContext)
 
     private val socket: PicsSocket = PicsSocket.build(GalleryPicsDelegate())
 
@@ -26,7 +25,7 @@ class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
                 data.value = Outcome.loading()
             }
             try {
-                val items = http.pics(limit, offset).pics
+                val items = picsApp.http.pics(limit, offset).pics
                 val newList =
                     if (offset == 0) items
                     else (data.value?.data?.pics ?: emptyList()) + items
@@ -44,7 +43,7 @@ class GalleryViewModel(val app: Application) : AndroidViewModel(app) {
     }
 
     fun reconnect() {
-        socket.open(http.http.token)
+        socket.open(picsApp.http.token)
     }
 
     fun disconnect() {

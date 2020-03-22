@@ -3,9 +3,9 @@
     <!-- Base application theme. -->
     <style name="PublicTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPink</item>
+        <item name="colorPrimaryDark">@color/colorDarkBackground</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:colorBackground">@color/colorLight</item>
+        <item name="android:colorBackground">@color/colorDarkBackground</item>
     </style>
 
     <style name="PrivateTheme" parent="Theme.AppCompat.Light.DarkActionBar">

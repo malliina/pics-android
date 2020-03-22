@@ -61,7 +61,7 @@ class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
 
     override fun onDestroyView() {
         view?.pic_pager?.unregisterOnPageChangeCallback(pageChangeCallback)
-        SystemUI.modifyStatusVisibility(true, requireActivity() as MainActivity)
+//        SystemUI.modifyStatusVisibility(true, requireActivity() as MainActivity)
         super.onDestroyView()
     }
 }
@@ -80,6 +80,38 @@ class PicFragmentAdapter(var pics: List<PicMeta>, pager: Fragment) :
     }
 }
 
+abstract class SwipeUpGestureListener : GestureDetector.OnGestureListener {
+    abstract fun onSwipeUp(velocityY: Float)
+    override fun onShowPress(e: MotionEvent?) {
+    }
+
+    override fun onSingleTapUp(e: MotionEvent?): Boolean = true
+
+    override fun onDown(e: MotionEvent?): Boolean = true
+
+    override fun onFling(
+        e1: MotionEvent?,
+        e2: MotionEvent?,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        if (velocityY < 0) {
+            onSwipeUp(velocityY)
+        }
+        return true
+    }
+
+    override fun onScroll(
+        e1: MotionEvent?,
+        e2: MotionEvent?,
+        distanceX: Float,
+        distanceY: Float
+    ): Boolean = true
+
+    override fun onLongPress(e: MotionEvent?) {
+    }
+}
+
 class PicFragment : ResourceFragment(R.layout.pic_fragment) {
     companion object {
         const val positionKey = "position"
@@ -88,9 +120,18 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
 
     private val viewModel: PicViewModel by viewModels()
     private val galleryViewModel: GalleryViewModel by activityViewModels()
+    private lateinit var gestureDetector: GestureDetector
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        gestureDetector = GestureDetector(requireContext(), object : SwipeUpGestureListener() {
+            override fun onSwipeUp(velocityY: Float) {
+                activity?.onBackPressed()
+            }
+        })
+        view.pic_view.setOnTouchListener { _, e ->
+            gestureDetector.onTouchEvent(e)
+        }
         galleryViewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
                 Status.Success -> {
@@ -107,20 +148,21 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
         viewModel.pic.observe(viewLifecycleOwner) { pic ->
             view.pic_view.setImageBitmap(pic.bitmap)
         }
-        view.pic_view.setOnTouchListener { _, event ->
-            if (event.actionMasked == MotionEvent.ACTION_UP) {
-                activity?.onBackPressed()
-            }
-            true
-        }
-        modifyStatusVisibility(false)
-        view.setOnClickListener {
-            val showStatus =
-                (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
-            modifyStatusVisibility(!showStatus)
-        }
+//        view.pic_view.setOnTouchListener { _, event ->
+//            if (event.actionMasked == MotionEvent.ACTION_UP) {
+//                activity?.onBackPressed()
+//            }
+//            true
+//        }
+//        modifyStatusVisibility(false)
+//        view.setOnClickListener {
+//            val showStatus =
+//                (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
+//            modifyStatusVisibility(!showStatus)
+//        }
         setHasOptionsMenu(true)
     }
+
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.pic_actions_menu, menu)

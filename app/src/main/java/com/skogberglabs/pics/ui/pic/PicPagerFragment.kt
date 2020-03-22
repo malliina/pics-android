@@ -1,10 +1,7 @@
 package com.skogberglabs.pics.ui.pic
 
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -28,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.Exception
+import androidx.lifecycle.observe
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()
@@ -49,11 +47,11 @@ class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
         pager.adapter = adapter
         currentPosition = savedInstanceState?.getInt(PicFragment.positionKey) ?: args.position
         pager.registerOnPageChangeCallback(pageChangeCallback)
-        galleryViewModel.pics.observe(viewLifecycleOwner, Observer { pics ->
+        galleryViewModel.pics.observe(viewLifecycleOwner) { pics ->
             adapter.pics = pics.data?.pics ?: emptyList()
             pager.setCurrentItem(currentPosition, false)
             adapter.notifyDataSetChanged()
-        })
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -93,7 +91,7 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        galleryViewModel.pics.observe(viewLifecycleOwner, Observer { outcome ->
+        galleryViewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
                 Status.Success -> {
                     arguments?.getInt(positionKey)?.let { pos ->
@@ -105,10 +103,16 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
                 else -> {
                 }
             }
-        })
-        viewModel.pic.observe(viewLifecycleOwner, Observer { pic ->
+        }
+        viewModel.pic.observe(viewLifecycleOwner) { pic ->
             view.pic_view.setImageBitmap(pic.bitmap)
-        })
+        }
+        view.pic_view.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_UP) {
+                activity?.onBackPressed()
+            }
+            true
+        }
         modifyStatusVisibility(false)
         view.setOnClickListener {
             val showStatus =

@@ -11,10 +11,9 @@
         <action
             android:id="@+id/gallery_to_pic_pager"
             app:destination="@id/pic_pager"
-            app:enterAnim="@anim/in_from_down"
-            app:exitAnim="@anim/out_to_down"
-            app:popEnterAnim="@anim/in_from_up"
-            app:popExitAnim="@anim/out_to_down" />
+            app:enterAnim="@anim/in_from_right"
+            app:popExitAnim="@anim/out_to_up"
+            app:exitAnim="@anim/out_to_left" />
     </fragment>
     <fragment
         android:id="@+id/pic_pager"

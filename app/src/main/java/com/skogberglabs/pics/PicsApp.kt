@@ -21,6 +21,8 @@ class PicsApp : Application() {
     private lateinit var httpClient: OkClient
     private lateinit var picsClient: PicsOkClient
     val http: PicsOkClient get() = picsClient
+    private lateinit var picFiles: PicFiles
+    val files: PicFiles get() = picFiles
 
     override fun onCreate() {
         super.onCreate()
@@ -37,6 +39,7 @@ class PicsApp : Application() {
         savedSettings = UserSettings.load(applicationContext)
         appCamera = SimpleCamera(applicationContext)
         service = PicService(applicationContext, httpClient)
+        picFiles = PicFiles(applicationContext)
     }
 
     class NoLogging : Timber.Tree() {

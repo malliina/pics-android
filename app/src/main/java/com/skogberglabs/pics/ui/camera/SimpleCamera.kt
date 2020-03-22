@@ -15,10 +15,12 @@ class SimpleCamera(appContext: Context) {
     }
 
     private val baseDir: File = appContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!
+    private val localDir = baseDir.resolve("local")
     private val stagingDir = baseDir.resolve("staging")
     private val uploadingDir = baseDir.resolve("uploading")
 
     init {
+        localDir.mkdirs()
         stagingDir.mkdirs()
         uploadingDir.mkdirs()
     }

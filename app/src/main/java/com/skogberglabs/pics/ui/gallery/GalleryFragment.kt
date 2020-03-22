@@ -3,6 +3,7 @@ package com.skogberglabs.pics.ui.gallery
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.Menu
@@ -10,24 +11,28 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.observe
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.skogberglabs.pics.MainActivityViewModel
 import com.skogberglabs.pics.R
 import com.skogberglabs.pics.auth.Google
+import com.skogberglabs.pics.backend.Email
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.Status
-import com.skogberglabs.pics.backend.UploadService
 import com.skogberglabs.pics.ui.Controls
 import com.skogberglabs.pics.ui.ResourceFragment
+import com.skogberglabs.pics.ui.distinctUntilChanged
 import com.skogberglabs.pics.ui.init
 import kotlinx.android.synthetic.main.gallery_fragment.view.*
 import timber.log.Timber
 import java.io.File
+
+data class PicOperation(val file: File, val uri: Uri, val email: Email?)
 
 class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDelegate {
     private val requestImageCapture = 1234
@@ -39,7 +44,15 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     private lateinit var viewManager: GridLayoutManager
 
     private lateinit var client: GoogleSignInClient
-    private var activePic: File? = null
+
+    // Number of items left until more items are loaded
+    private val loadMoreThreshold = 20
+    private val itemsPerLoad = 50
+    private val lastVisibleIndex = MutableLiveData<Int>()
+
+    // Local state for the camera
+    private var activePic: PicOperation? = null
+
     // Hack used to determine whether or not to animate collection updates
     private var initial = true
 
@@ -50,9 +63,28 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewManager = GridLayoutManager(context, 2)
+        val spanCount = 2
+        viewManager = GridLayoutManager(context, spanCount)
         viewAdapter = PicsAdapter(emptyList(), app, this)
         view.gallery_view.init(viewManager, viewAdapter)
+        view.gallery_view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy > 0) {
+                    val lastVisible = viewManager.findLastVisibleItemPosition()
+                    lastVisibleIndex.postValue(lastVisible)
+                }
+            }
+        })
+        lastVisibleIndex.distinctUntilChanged().observe(viewLifecycleOwner) { lastPos ->
+            val itemCount = viewAdapter.itemCount
+            // If spanCount is 2 and itemsPerLoad is an even number, then lastPos is always uneven
+            // if there are more items. So, we add +1 to lastPos which is an even number, to make
+            // this condition work. Remove this hack is possible.
+            if (lastPos + 1 + loadMoreThreshold == itemCount) {
+                viewModel.loadPics(itemsPerLoad, itemCount)
+            }
+        }
         mainViewModel.signedInUser.observe(viewLifecycleOwner) { userInfo ->
             Timber.i("$userInfo")
             val message =
@@ -76,18 +108,28 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                             ctrl.display(getString(R.string.no_pics))
                         } else {
                             ctrl.showList()
+                            val previousSize = viewAdapter.list.size
                             viewAdapter.list = pics
                             // Animates collection updates
                             val removed = list.removedIndices
-                            if (!initial && (list.prependedCount > 0 || removed.isNotEmpty())) {
-                                val isScrolledToTop = viewManager.findFirstVisibleItemPosition() == 0
-                                Timber.i("Animated update")
-                                viewAdapter.notifyItemRangeInserted(0, list.prependedCount)
-                                list.removedIndices.forEach { idx ->
-                                    viewAdapter.notifyItemRemoved(idx)
-                                }
-                                if (isScrolledToTop) {
-                                    viewManager.scrollToPosition(0)
+                            if (!initial) {
+                                if (list.prependedCount > 0 || list.appendedCount > 0 || removed.isNotEmpty()) {
+                                    val isScrolledToTop =
+                                        viewManager.findFirstVisibleItemPosition() == 0
+                                    Timber.i("Animated update")
+                                    viewAdapter.notifyItemRangeInserted(0, list.prependedCount)
+                                    list.removedIndices.forEach { idx ->
+                                        viewAdapter.notifyItemRemoved(idx)
+                                    }
+                                    viewAdapter.notifyItemRangeInserted(previousSize, list.appendedCount)
+                                    if (isScrolledToTop) {
+                                        viewManager.scrollToPosition(0)
+                                    }
+                                } else if (list.backgroundUpdate) {
+                                    Timber.i("Background update.")
+                                } else {
+                                    Timber.i("Reloading list")
+                                    viewAdapter.notifyDataSetChanged()
                                 }
                             } else {
                                 initial = false
@@ -118,44 +160,43 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
         viewModel.disconnect()
     }
 
     private fun launchCamera() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
-            takePictureIntent.resolveActivity(requireContext().packageManager)?.also {
-                val file = app.camera.createImageFile(app.settings.activeUser)
-                file?.let { destination ->
-                    activePic = destination
-                    val uri = FileProvider.getUriForFile(
-                        requireContext(),
-                        "com.skogberglabs.pics.fileprovider",
-                        destination
-                    )
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
-                    startActivityForResult(takePictureIntent, requestImageCapture)
-                }
-                if (file == null) {
-                    Toast.makeText(
-                            requireContext(),
-                            "Failed to prepare camera.",
-                            Toast.LENGTH_SHORT
-                        )
-                        .show()
+        val maybeEmail = app.settings.privateEmail
+        if (isPrivate && maybeEmail == null) {
+            showToast("Unable to take pictures now. Try again later.")
+        } else {
+            Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
+                takePictureIntent.resolveActivity(requireContext().packageManager)?.also {
+                    val file = app.camera.createImageFile(maybeEmail)
+                    file?.let { destination ->
+                        val uri = app.files.uriForfile(destination)
+                        activePic = PicOperation(destination, uri, maybeEmail)
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                        startActivityForResult(takePictureIntent, requestImageCapture)
+                    }
+                    if (file == null) {
+                        showToast("Failed to prepare camera.")
+                    }
                 }
             }
         }
     }
 
+    private fun showToast(message: String) =
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Timber.i("Got result with code $requestCode.")
         if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
-            activePic?.let { file ->
-                Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
-                UploadService.enqueue(requireContext(), mainViewModel.signedInUser.value)
+            activePic?.let { operation ->
+                viewModel.onPicTaken(operation, mainViewModel.signedInUser.value)
+                activePic = null
             }
         }
     }

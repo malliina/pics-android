@@ -6,11 +6,19 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.skogberglabs.pics.backend.*
 import com.skogberglabs.pics.ui.AppViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import timber.log.Timber
 
-data class PicsList(val pics: List<PicMeta>, val prependedCount: Int, val removedIndices: List<Int>)
+data class PicsList(
+    val pics: List<PicMeta>,
+    val prependedCount: Int,
+    val appendedCount: Int,
+    val removedIndices: List<Int>,
+    val backgroundUpdate: Boolean = false
+)
 
 class GalleryViewModel(app: Application) : AppViewModel(app) {
     private val data = MutableLiveData<Outcome<PicsList>>()
@@ -29,7 +37,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                 val newList =
                     if (offset == 0) items
                     else (data.value?.data?.pics ?: emptyList()) + items
-                data.value = Outcome.success(PicsList(newList, 0, emptyList()))
+                data.value = Outcome.success(PicsList(newList, 0, items.size, emptyList()))
                 Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
             } catch (e: Exception) {
                 val noVisiblePictures = limit == 0
@@ -37,6 +45,33 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     data.value = Outcome.error(SingleError.backend("Error."))
                 } else {
                     Timber.e(e, "Failed to load pics from $offset until $until.")
+                }
+            }
+        }
+    }
+
+    fun onPicTaken(operation: PicOperation, user: UserInfo?) {
+        val existing = data.value?.data?.pics ?: emptyList()
+        Timber.i("Processing ${operation.file}...")
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val localCopy = picsApp.pics.localCopy(operation.file)
+                    Timber.i("Copied ${operation.file} to $localCopy bytes. Size ${localCopy.length()} bytes.")
+                    val key = PicKey(localCopy.name)
+                    val file = operation.file
+                    val uri = picsApp.files.uriForfile(localCopy)
+                    val url = FullUrl.build(uri.toString())!!
+                    val local =
+                        PicMeta(key, System.currentTimeMillis() / 1000, url, url, url, url, key.value)
+                    val list = PicsList(listOf(local) + existing, 1, 0, emptyList(), false)
+                    data.postValue(Outcome.success(list))
+                    if ((user?.email == null && operation.email == null) || (user?.email == operation.email)) {
+                        Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
+                        UploadService.enqueue(picsApp.applicationContext, user)
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to process image.")
                 }
             }
         }
@@ -56,8 +91,14 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
         }
 
         override fun onPicsAdded(pics: List<PicMeta>) {
-            val update =
-                PicsList(pics + (data.value?.data?.pics ?: emptyList()), pics.size, emptyList())
+            val existing = data.value?.data?.pics ?: emptyList()
+            // Removes any existing keys with matching clientKeys, then prepends the provided pics
+            val base =
+                existing.filterNot { p -> pics.any { pic -> pic.clientKey == p.clientKey } }
+            // If the provided pics already existed, performs a background update only
+            val newCount = pics.size - (existing.size - base.size)
+            val onlyExistingUpdated = newCount == 0
+            val update = PicsList(pics + base, newCount, 0, emptyList(), onlyExistingUpdated)
             data.postValue(Outcome.success(update))
         }
 
@@ -66,7 +107,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
             val indices =
                 old.withIndex().filter { p -> keys.contains(p.value.key) }.map { it.index }
             val remaining = old.filterIndexed { index, _ -> !indices.contains(index) }
-            data.postValue(Outcome.success(PicsList(remaining, 0, indices)))
+            data.postValue(Outcome.success(PicsList(remaining, 0, 0, indices)))
         }
 
         override fun onClosed(url: HttpUrl) {

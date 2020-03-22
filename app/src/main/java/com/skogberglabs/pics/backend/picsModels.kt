@@ -2,6 +2,7 @@ package com.skogberglabs.pics.backend
 
 import android.graphics.Bitmap
 import android.os.Parcelable
+import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass
 import kotlinx.android.parcel.Parcelize
 
@@ -29,13 +30,14 @@ data class PicMeta(
     val url: FullUrl,
     val small: FullUrl,
     val medium: FullUrl,
-    val large: FullUrl
+    val large: FullUrl,
+    val clientKey: String?
 )
 
 @JsonClass(generateAdapter = true)
 data class Pics(val pics: List<PicMeta>) {
     companion object {
-        val adapter = Json.moshi.adapter(Pics::class.java)
+        val adapter: JsonAdapter<Pics> = Json.moshi.adapter(Pics::class.java)
     }
 }
 

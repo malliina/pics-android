@@ -16,6 +16,7 @@ import okio.sink
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -63,13 +64,16 @@ class OkClient(private val tokenSource: TokenSource) {
         const val Authorization = "Authorization"
     }
 
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .writeTimeout(600, TimeUnit.SECONDS)
+        .readTimeout(600, TimeUnit.SECONDS)
+        .build()
 
     suspend fun <T> getJson(
         url: FullUrl,
         headers: Map<String, String>,
         adapter: JsonAdapter<T>
-    ): T = executeJson(newRequest(url, headers).build(), adapter)
+    ): T = withContext(Dispatchers.IO) { executeJson(newRequest(url, headers).build(), adapter) }
 
     suspend fun delete(url: FullUrl, headers: Map<String, String>) = withContext(Dispatchers.IO) {
         val request = newRequest(url, headers).delete().build()
@@ -82,9 +86,9 @@ class OkClient(private val tokenSource: TokenSource) {
         headers: Map<String, String>,
         writer: JsonAdapter<Req>,
         reader: JsonAdapter<Res>
-    ): Res {
+    ): Res = withContext(Dispatchers.IO) {
         val requestBody = writer.toJson(body).toRequestBody(MediaTypeJson)
-        return executeJson(newRequest(url, headers).post(requestBody).build(), reader)
+        executeJson(newRequest(url, headers).post(requestBody).build(), reader)
     }
 
     suspend fun postFile(file: File, to: FullUrl, headers: Map<String, String>): Response =
@@ -97,7 +101,7 @@ class OkClient(private val tokenSource: TokenSource) {
             }
         }
 
-    suspend fun download(url: FullUrl, to: File): StorageSize? = withContext(Dispatchers.IO) {
+    suspend fun download(url: FullUrl, to: File): StorageSize = withContext(Dispatchers.IO) {
         to.parentFile?.mkdirs()
         to.createNewFile()
         Timber.i("Downloading '$url' to '$to'...")
@@ -107,18 +111,17 @@ class OkClient(private val tokenSource: TokenSource) {
                 val responseBody = response.body
                 if (responseBody == null) {
                     Timber.w("Got no response body from '$url'.")
+                    throw BodyException(request)
                 }
-                responseBody?.let { body ->
-                    val sink = to.sink().buffer()
-                    val size = sink.use { s ->
-                        StorageSize(s.writeAll(body.source()))
-                    }
-                    Timber.i("Downloaded $size bytes from '$url' to '$to'.")
-                    size
+                val sink = to.sink().buffer()
+                val size = sink.use { s ->
+                    StorageSize(s.writeAll(responseBody.source()))
                 }
+                Timber.i("Downloaded $size bytes from '$url' to '$to'.")
+                size
             } else {
                 Timber.w("Non-OK status code ${response.code} from '$url'.")
-                null
+                throw StatusException(response.code, request)
             }
         }
     }

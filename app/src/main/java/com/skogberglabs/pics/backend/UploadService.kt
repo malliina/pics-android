@@ -23,13 +23,12 @@ class UploadService : JobIntentService() {
         private const val uploadJobsId = 12345
 
         fun enqueue(context: Context, user: UserInfo?) {
+            val intent = Intent()
             user?.let { u ->
-                val intent = Intent().apply {
-                    putExtra(EmailKey, u.email.value)
-                    putExtra(TokenKey, u.idToken.value)
-                }
-                enqueue(context, intent)
+                intent.putExtra(EmailKey, u.email.value)
+                intent.putExtra(TokenKey, u.idToken.value)
             }
+            enqueue(context, intent)
         }
 
         private fun enqueue(context: Context, intent: Intent) {
@@ -54,7 +53,7 @@ class UploadService : JobIntentService() {
     }
 
 
-    fun headers(token: IdToken?): Map<String, String> {
+    private fun headers(token: IdToken?): Map<String, String> {
         val acceptPair = Accept to PicsOkClient.PicsVersion10
         return if (token != null) mapOf(
             Authorization to "Bearer $token",

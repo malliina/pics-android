@@ -24,6 +24,7 @@ import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.Email
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.Status
+import com.skogberglabs.pics.backend.UserInfo
 import com.skogberglabs.pics.ui.Controls
 import com.skogberglabs.pics.ui.ResourceFragment
 import com.skogberglabs.pics.ui.distinctUntilChanged
@@ -32,7 +33,9 @@ import kotlinx.android.synthetic.main.gallery_fragment.view.*
 import timber.log.Timber
 import java.io.File
 
-data class PicOperation(val file: File, val uri: Uri, val email: Email?)
+data class PicOperation(val file: File, val uri: Uri, val user: UserInfo?) {
+    val email: Email? get() = user?.email
+}
 
 class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDelegate {
     private val requestImageCapture = 1234
@@ -173,7 +176,8 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     }
 
     private fun launchCamera() {
-        val maybeEmail = app.settings.privateEmail
+        val maybeUser = mainViewModel.effectiveUser.value
+        val maybeEmail = maybeUser?.email
         if (isPrivate && maybeEmail == null) {
             showToast("Unable to take pictures now. Try again later.")
         } else {
@@ -182,7 +186,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                     val file = app.camera.createImageFile(maybeEmail)
                     file?.let { destination ->
                         val uri = app.files.uriForfile(destination)
-                        activePic = PicOperation(destination, uri, maybeEmail)
+                        activePic = PicOperation(destination, uri, maybeUser)
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri)
                         startActivityForResult(takePictureIntent, requestImageCapture)
                     }
@@ -194,15 +198,12 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         }
     }
 
-    private fun showToast(message: String) =
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         Timber.i("Got result with code $requestCode.")
         if (requestCode == requestImageCapture && resultCode == RESULT_OK) {
             activePic?.let { operation ->
-                viewModel.onPicTaken(operation, mainViewModel.signedInUser.value)
+                viewModel.onPicTaken(operation)
                 activePic = null
             }
         }
@@ -264,4 +265,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
             mainViewModel.updateUser(null)
         }
     }
+
+    private fun showToast(message: String) =
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
 }

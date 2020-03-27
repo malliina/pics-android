@@ -148,18 +148,6 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
         viewModel.pic.observe(viewLifecycleOwner) { pic ->
             view.pic_view.setImageBitmap(pic.bitmap)
         }
-//        view.pic_view.setOnTouchListener { _, event ->
-//            if (event.actionMasked == MotionEvent.ACTION_UP) {
-//                activity?.onBackPressed()
-//            }
-//            true
-//        }
-//        modifyStatusVisibility(false)
-//        view.setOnClickListener {
-//            val showStatus =
-//                (requireActivity() as MainActivity).supportActionBar?.isShowing ?: false
-//            modifyStatusVisibility(!showStatus)
-//        }
         setHasOptionsMenu(true)
     }
 
@@ -187,9 +175,5 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
         else -> {
             super.onOptionsItemSelected(item)
         }
-    }
-
-    private fun modifyStatusVisibility(visible: Boolean) {
-        SystemUI.modifyStatusVisibility(visible, requireActivity() as MainActivity)
     }
 }

@@ -65,9 +65,11 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
         }
     }
 
-    fun onPicTaken(operation: PicOperation, user: UserInfo?) {
+    fun onPicTaken(operation: PicOperation) {
         val existing = data.value?.data?.pics ?: emptyList()
-        Timber.i("Processing ${operation.file}...")
+        val email = operation.email
+        val describeUser = email ?: "anon"
+        Timber.i("Processing ${operation.file} by $describeUser...")
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
@@ -89,10 +91,8 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                         )
                     val list = PicsList(listOf(local) + existing, 1, 0, emptyList(), false)
                     data.postValue(Outcome.success(list))
-                    if ((user?.email == null && operation.email == null) || (user?.email == operation.email)) {
-                        Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
-                        UploadService.enqueue(picsApp.applicationContext, user)
-                    }
+                    Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
+                    UploadService.enqueue(picsApp.applicationContext, operation.user)
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to process image.")
                 }

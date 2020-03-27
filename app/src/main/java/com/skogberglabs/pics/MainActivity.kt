@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
             findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
         })
-        viewModel.signedInUser.observe(this, Observer { user ->
+        viewModel.effectiveUser.observe(this, Observer { user ->
             UploadService.enqueue(applicationContext, user)
         })
         viewModel.signInSilently(applicationContext)

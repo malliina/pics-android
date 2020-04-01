@@ -91,20 +91,14 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         mainViewModel.effectiveUser.observe(viewLifecycleOwner) { userInfo ->
             val message =
                 userInfo?.let { "Signed in as ${it.email}." } ?: getString(R.string.not_signed_in)
+            activity?.invalidateOptionsMenu()
             Timber.i(message)
             view.message.text = message
-            activity?.invalidateOptionsMenu()
             val user = if (isPrivate) userInfo else null
             viewModel.updateUser(user)
             Timber.i("Reconnecting via onViewCreated")
             viewModel.reconnect()
         }
-//        mainViewModel.activeUser.observe(viewLifecycleOwner) { userInfo ->
-//            Timber.i("Effective $userInfo")
-//        }
-//        mainViewModel.mode.observe(viewLifecycleOwner) { mode ->
-//            viewModel.loadPics(100, 0)
-//        }
         val ctrl = Controls(null, view.gallery_view, view.message)
         viewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
@@ -209,25 +203,29 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.profile_menu, menu)
-        val activeUser = mainViewModel.signedInUser.value
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        val signedInEmail = app.settings.privateEmail
         // public, login, private, logout
         val publicItem = menu.getItem(0)
         publicItem.isChecked = !isPrivate
         publicItem.isCheckable = !isPrivate
-        val isSignedIn = activeUser != null
+        val isSignedIn = signedInEmail != null
         val loginItem = menu.getItem(1)
         loginItem.isVisible = !isSignedIn
         val privateItem = menu.getItem(2)
         privateItem.isVisible = isSignedIn
         privateItem.isChecked = isPrivate && isSignedIn
         privateItem.isCheckable = isPrivate && isSignedIn
-        activeUser?.let { user ->
-            privateItem.title = user.email.value
+        signedInEmail?.let { email ->
+            privateItem.title = email.email
         }
         val logoutItem = menu.getItem(3)
         logoutItem.isVisible = isSignedIn
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.profile_menu, menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
@@ -247,6 +245,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         R.id.logout_item -> {
             client.signOut().addOnCompleteListener {
                 Timber.i("Signed out.")
+                app.settings.privateEmail = null
                 adjustMode(false)
             }
             true
@@ -257,7 +256,6 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     }
 
     private fun adjustMode(isPrivate: Boolean) {
-//        viewModel.clearPics()
         app.settings.isPrivate = isPrivate
         if (isPrivate) {
             mainViewModel.signInSilently(app.applicationContext)

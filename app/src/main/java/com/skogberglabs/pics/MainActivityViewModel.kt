@@ -16,9 +16,8 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
     private val google = Google.instance
 
     private val activeUserData = MutableLiveData<UserInfo?>()
-    val signedInUser: LiveData<UserInfo?> = activeUserData.distinctUntilChanged()
-    val effectiveUser: LiveData<UserInfo?> = activeUserData.map { u -> if (settings.isPrivate) u else null }.distinctUntilChanged()
-
+    val effectiveUser: LiveData<UserInfo?> =
+        activeUserData.map { u -> if (settings.isPrivate) u else null }.distinctUntilChanged()
     val mode: LiveData<AppMode> =
         activeUserData.map { if (settings.isPrivate) AppMode.Private else AppMode.Public }
 
@@ -27,12 +26,17 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
             try {
                 val user = google.signInSilently(ctx)
                 Timber.i("Hello, '${user.email}'!")
-                updateUser(user)
+                updateSignedInUser(user)
             } catch (e: Exception) {
                 Timber.w(e, "No authenticated profile.")
-                updateUser(null)
+                updateSignedInUser(null)
             }
         }
+    }
+
+    fun updateSignedInUser(user: UserInfo?) {
+        settings.privateEmail = user?.email
+        activeUserData.postValue(user)
     }
 
     fun updateUser(user: UserInfo?) {

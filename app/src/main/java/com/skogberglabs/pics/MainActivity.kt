@@ -76,11 +76,11 @@ class MainActivity : AppCompatActivity() {
             Timber.i("Sign in success.")
             app.settings.isPrivate = true
             app.settings.privateEmail = user?.email
-            viewModel.updateUser(user)
+            viewModel.updateSignedInUser(user)
         } catch (e: ApiException) {
             val str = CommonStatusCodes.getStatusCodeString(e.statusCode)
             Timber.w(e, "Sign in failed. Code ${e.statusCode}. $str.")
-            viewModel.updateUser(null)
+            viewModel.updateSignedInUser(null)
         }
     }
 

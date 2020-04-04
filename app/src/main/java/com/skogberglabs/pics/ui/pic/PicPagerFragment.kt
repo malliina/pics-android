@@ -1,5 +1,6 @@
 package com.skogberglabs.pics.ui.pic
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.lang.Exception
 import androidx.lifecycle.observe
+import com.skogberglabs.pics.PicFiles
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()
@@ -151,12 +153,26 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
         setHasOptionsMenu(true)
     }
 
-
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.pic_actions_menu, menu)
+        val shareItem = menu.getItem(0)
+        val deleteItem = menu.getItem(1)
+        deleteItem.isVisible = isPrivate
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.share_pic_item -> {
+            viewModel.pic.value?.let { pic ->
+                val uri = app.files.uriForfile(pic.file)
+                val shareIntent: Intent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    type = "image/jpeg"
+                }
+                startActivity(Intent.createChooser(shareIntent, resources.getText(R.string.send_to)))
+            }
+            true
+        }
         R.id.delete_pic_item -> {
             try {
                 mainScope.launch {

@@ -12,8 +12,9 @@ import com.skogberglabs.pics.ui.AppViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
-data class PicBitmap(val pic: PicMeta, val bitmap: Bitmap)
+data class PicBitmap(val pic: PicMeta, val bitmap: Bitmap, val file: File)
 
 class PicViewModel(app: Application): AppViewModel(app) {
     private val picData = MutableLiveData<PicBitmap>()
@@ -22,7 +23,7 @@ class PicViewModel(app: Application): AppViewModel(app) {
     fun load(pic: PicMeta, size: PicSize) {
         viewModelScope.launch {
             picsApp.pics.fetchBitmap(pic, size)?.let { bitmap ->
-                picData.postValue(PicBitmap(pic, bitmap))
+                picData.postValue(PicBitmap(pic, bitmap.bitmap, bitmap.file))
             }
         }
     }

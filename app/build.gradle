@@ -1,10 +1,10 @@
-apply plugin: 'com.android.application'
+apply plugin: "com.android.application"
 
-apply plugin: 'kotlin-android'
+apply plugin: "kotlin-android"
 
-apply plugin: 'kotlin-android-extensions'
+apply plugin: "kotlin-android-extensions"
 
-apply plugin: 'kotlin-kapt'
+apply plugin: "kotlin-kapt"
 
 apply plugin: "androidx.navigation.safeargs.kotlin"
 
@@ -23,7 +23,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
     }
     compileOptions {

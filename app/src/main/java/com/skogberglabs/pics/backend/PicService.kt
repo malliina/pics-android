@@ -20,6 +20,8 @@ enum class PicSize {
 
 data class PicSource(val file: File, val rotate: Boolean)
 
+data class BitmapFile(val bitmap: Bitmap, val file: File)
+
 class PicService(appContext: Context, private val ok: OkClient) {
     private val localDir = appContext.cacheDir.resolve("local")
     private val smallDir = appContext.cacheDir.resolve("small")
@@ -48,11 +50,12 @@ class PicService(appContext: Context, private val ok: OkClient) {
             }
     }
 
-    suspend fun fetchBitmap(pic: PicMeta, size: PicSize): Bitmap? = withContext(Dispatchers.IO) {
+    suspend fun fetchBitmap(pic: PicMeta, size: PicSize): BitmapFile = withContext(Dispatchers.IO) {
         val source = fetch(pic, size)
         val file = source.file
         val initial = BitmapFactory.decodeFile(file.absolutePath)
-        if (source.rotate) rotateIfNecessary(file, initial) else initial
+        val bitmap = if (source.rotate) rotateIfNecessary(file, initial) else initial
+        BitmapFile(bitmap, file)
     }
 
     private fun rotateIfNecessary(photoPath: File, bitmap: Bitmap): Bitmap {

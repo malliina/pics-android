@@ -9,5 +9,9 @@
     <string name="share">Share</string>
     <string name="send_to">Send to</string>
     <string name="delete_image">Delete image</string>
+    <string name="delete_dialog_title">Are you sure?</string>
+    <string name="delete_dialog_message">The image will be permanently deleted.</string>
+    <string name="delete_dialog_yes">Yes</string>
+    <string name="delete_dialog_no">No</string>
     <string name="error_generic">An error occurred.</string>
 </resources>

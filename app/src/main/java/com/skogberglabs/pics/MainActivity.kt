@@ -5,8 +5,8 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.observe
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             setupActionBarWithNavController(navController())
         }
-        viewModel.mode.observe(this, Observer { mode ->
+        viewModel.mode.observe(this) { mode ->
             val colors = when (mode) {
                 AppMode.Public -> AppColors(
                     statusBar = getColor(R.color.colorLightStatusBar),
@@ -54,10 +54,10 @@ class MainActivity : AppCompatActivity() {
             window.navigationBarColor = colors.navigationBar
             supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
             findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
-        })
-        viewModel.effectiveUser.observe(this, Observer { user ->
+        }
+        viewModel.effectiveUser.observe(this) { user ->
             UploadService.enqueue(applicationContext, user)
-        })
+        }
         viewModel.signInSilently(applicationContext)
     }
 

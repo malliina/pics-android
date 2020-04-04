@@ -7,17 +7,16 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.observe
 import androidx.navigation.fragment.navArgs
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.skogberglabs.pics.MainActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.skogberglabs.pics.R
 import com.skogberglabs.pics.backend.PicMeta
 import com.skogberglabs.pics.backend.PicSize
 import com.skogberglabs.pics.backend.Status
 import com.skogberglabs.pics.ui.ResourceFragment
-import com.skogberglabs.pics.ui.SystemUI
 import com.skogberglabs.pics.ui.gallery.GalleryViewModel
 import kotlinx.android.synthetic.main.pic_fragment.view.*
 import kotlinx.android.synthetic.main.pic_pager_fragment.view.*
@@ -25,9 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.lang.Exception
-import androidx.lifecycle.observe
-import com.skogberglabs.pics.PicFiles
 
 class PicPagerFragment : ResourceFragment(R.layout.pic_pager_fragment) {
     private val args: PicPagerFragmentArgs by navArgs()
@@ -155,7 +151,7 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.pic_actions_menu, menu)
-        val shareItem = menu.getItem(0)
+//        val shareItem = menu.getItem(0)
         val deleteItem = menu.getItem(1)
         deleteItem.isVisible = isPrivate
     }
@@ -169,27 +165,49 @@ class PicFragment : ResourceFragment(R.layout.pic_fragment) {
                     putExtra(Intent.EXTRA_STREAM, uri)
                     type = "image/jpeg"
                 }
-                startActivity(Intent.createChooser(shareIntent, resources.getText(R.string.send_to)))
+                startActivity(
+                    Intent.createChooser(
+                        shareIntent,
+                        resources.getText(R.string.send_to)
+                    )
+                )
             }
             true
         }
         R.id.delete_pic_item -> {
-            try {
-                mainScope.launch {
-                    viewModel.pic.value?.pic?.key?.let { key ->
-                        val code = viewModel.delete(key)
-                        activity?.onBackPressed()
-                    }
+            MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.delete_dialog_title)
+                .setMessage(R.string.delete_dialog_message)
+                .setPositiveButton(R.string.delete_dialog_yes) { dialog, idx ->
+                    deleteImage()
                 }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to delete image.")
-                Toast.makeText(requireContext(), "Failed to delete image.", Toast.LENGTH_SHORT)
-                    .show()
-            }
+                .setNegativeButton(R.string.delete_dialog_no) { dialog, idx ->
+                }
+                .show()
             true
         }
         else -> {
             super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun deleteImage() {
+        try {
+            mainScope.launch {
+                viewModel.pic.value?.pic?.key?.let { key ->
+                    val code = viewModel.delete(key)
+                    activity?.onBackPressed()
+                }
+            }
+        } catch (e: Exception) {
+            val msg = "Failed to delete image."
+            Timber.e(e, msg)
+            Toast.makeText(
+                    requireContext(),
+                    msg,
+                    Toast.LENGTH_SHORT
+                )
+                .show()
         }
     }
 }

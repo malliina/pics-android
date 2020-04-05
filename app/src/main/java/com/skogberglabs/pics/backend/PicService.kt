@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
-
+import java.lang.Exception
 
 enum class PicSize {
     Small,
@@ -50,13 +50,21 @@ class PicService(appContext: Context, private val ok: OkClient) {
             }
     }
 
-    suspend fun fetchBitmap(pic: PicMeta, size: PicSize): BitmapFile = withContext(Dispatchers.IO) {
-        val source = fetch(pic, size)
-        val file = source.file
-        val initial = BitmapFactory.decodeFile(file.absolutePath)
-        val bitmap = if (source.rotate) rotateIfNecessary(file, initial) else initial
-        BitmapFile(bitmap, file)
-    }
+    suspend fun fetchBitmap(pic: PicMeta, size: PicSize): BitmapFile? =
+        withContext(Dispatchers.IO) {
+            try {
+                val source = fetch(pic, size)
+                val file = source.file
+                BitmapFactory.decodeFile(file.absolutePath)?.let {
+                    val bitmap = if (source.rotate) rotateIfNecessary(file, it) else it
+                    BitmapFile(bitmap, file)
+                }
+            } catch (e: Exception) {
+                Timber.i(e, "Failed to load pic '${pic.key}'.")
+                null
+            }
+
+        }
 
     private fun rotateIfNecessary(photoPath: File, bitmap: Bitmap): Bitmap {
         val exif = ExifInterface(photoPath)
@@ -87,11 +95,11 @@ class PicService(appContext: Context, private val ok: OkClient) {
         val destination = dir.resolve(pic.key.key)
         val localDestination = localDir.resolve(pic.key.key)
         return when {
-            destination.exists() -> {
+            destination.exists() && destination.length() > 0 -> {
                 Timber.d("Found $destination locally.")
                 PicSource(destination, false)
             }
-            localDestination.exists() -> {
+            localDestination.exists() && localDestination.length() > 0 -> {
                 Timber.d("Found $localDestination locally.")
                 PicSource(localDestination, true)
             }

@@ -174,8 +174,13 @@ class OkClient(private val tokenSource: TokenSource) {
             } else {
                 val body = response.body
                 if (body != null) {
-                    Json.instance.errorsAdapter.fromJson(body.source())?.let { errors ->
-                        throw ErrorsException(errors, response.code, request)
+                    val errors = try {
+                        Json.instance.errorsAdapter.fromJson(body.source())
+                    } catch (e: Exception) {
+                        null
+                    }
+                    errors?.let { es ->
+                        throw ErrorsException(es, response.code, request)
                     }
                 }
                 throw StatusException(response.code, request)

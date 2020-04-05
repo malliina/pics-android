@@ -37,9 +37,10 @@ class PicsAdapter(
 
     private fun install(pic: PicMeta, to: ImageView) {
         mainScope.launch {
-            val bitmapFile = service.fetchBitmap(pic, PicSize.Small)
-            to.setImageBitmap(bitmapFile.bitmap)
-            to.scaleType = ImageView.ScaleType.CENTER_CROP
+            service.fetchBitmap(pic, PicSize.Small)?.let { bitmapFile ->
+                to.setImageBitmap(bitmapFile.bitmap)
+                to.scaleType = ImageView.ScaleType.CENTER_CROP
+            }
         }
     }
 }

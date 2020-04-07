@@ -22,6 +22,7 @@ data class PicsList(
 
 class GalleryViewModel(app: Application) : AppViewModel(app) {
     private val data = MutableLiveData<Outcome<PicsList>>()
+    private val existing: List<PicMeta> get() = data.value?.data?.pics ?: emptyList()
     val pics: LiveData<Outcome<PicsList>> = data
 
     private val socket: PicsSocket = PicsSocket.build(GalleryPicsDelegate())
@@ -42,31 +43,34 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
 
     fun loadPics(limit: Int, offset: Int) {
         val until = offset + limit
+        val current = existing
         viewModelScope.launch {
-            if (offset == 0) {
-                data.value = Outcome.loading()
-            }
-            try {
-                val items = picsApp.http.pics(limit, offset).pics
-                val newList =
-                    if (offset == 0) items
-                    else (data.value?.data?.pics ?: emptyList()) + items
-                val list = PicsList(newList, 0, if (offset == 0) 0 else items.size, emptyList())
-                data.value = Outcome.success(list)
-                Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
-            } catch (e: Exception) {
-                val noVisiblePictures = limit == 0
-                if (noVisiblePictures) {
-                    data.value = Outcome.error(SingleError.backend("Error."))
-                } else {
-                    Timber.e(e, "Failed to load pics from $offset until $until.")
+            withContext(Dispatchers.IO) {
+                if (offset == 0) {
+                    data.postValue(Outcome.loading())
+                }
+                try {
+                    val items = picsApp.http.pics(limit, offset).pics
+                    val newList: List<PicMeta> =
+                        if (offset == 0) items
+                        else current + items
+                    val list = PicsList(newList, 0, if (offset == 0) 0 else items.size, emptyList())
+                    data.postValue(Outcome.success(list))
+                    Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
+                } catch (e: Exception) {
+                    val noVisiblePictures = limit == 0
+                    if (noVisiblePictures) {
+                        data.postValue(Outcome.error(SingleError.backend("Error.")))
+                    } else {
+                        Timber.e(e, "Failed to load pics from $offset until $until.")
+                    }
                 }
             }
         }
     }
 
     fun onPicTaken(operation: PicOperation) {
-        val existing = data.value?.data?.pics ?: emptyList()
+        val current = existing
         val email = operation.email
         val describeUser = email ?: "anon"
         Timber.i("Processing ${operation.file} by $describeUser...")
@@ -89,7 +93,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                             url,
                             key.value
                         )
-                    val list = PicsList(listOf(local) + existing, 1, 0, emptyList(), false)
+                    val list = PicsList(listOf(local) + current, 1, 0, emptyList(), false)
                     data.postValue(Outcome.success(list))
                     Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
                     UploadService.enqueue(picsApp.applicationContext, operation.user)
@@ -114,19 +118,19 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
         }
 
         override fun onPicsAdded(pics: List<PicMeta>) {
-            val existing = data.value?.data?.pics ?: emptyList()
+            val current = existing
             // Removes any existing keys with matching clientKeys, then prepends the provided pics
             val base =
-                existing.filterNot { p -> pics.any { pic -> pic.clientKey == p.clientKey } }
+                current.filterNot { p -> pics.any { pic -> pic.clientKey == p.clientKey } }
             // If the provided pics already existed, performs a background update only
-            val newCount = pics.size - (existing.size - base.size)
+            val newCount = pics.size - (current.size - base.size)
             val onlyExistingUpdated = newCount == 0
             val update = PicsList(pics + base, newCount, 0, emptyList(), onlyExistingUpdated)
             data.postValue(Outcome.success(update))
         }
 
         override fun onPicsRemoved(keys: List<PicKey>) {
-            val old = data.value?.data?.pics ?: emptyList()
+            val old = existing
             val indices =
                 old.withIndex().filter { p -> keys.contains(p.value.key) }.map { it.index }
             val remaining = old.filterIndexed { index, _ -> !indices.contains(index) }

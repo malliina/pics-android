@@ -18,9 +18,9 @@ enum class PicSize {
     Large
 }
 
-data class PicSource(val file: File, val rotate: Boolean)
+data class PicSource(val file: File, val rotate: Boolean, val size: PicSize)
 
-data class BitmapFile(val bitmap: Bitmap, val file: File)
+data class BitmapFile(val bitmap: Bitmap, val file: File, val size: PicSize)
 
 class PicService(appContext: Context, private val ok: OkClient) {
     private val localDir = appContext.cacheDir.resolve("local")
@@ -45,7 +45,7 @@ class PicService(appContext: Context, private val ok: OkClient) {
         // Deletes local images older than one month
         (larges + smalls).filter { f -> f.lastModified() + oneMonth < System.currentTimeMillis() }
             .forEach { file ->
-                Timber.i("Deleting $file.")
+                Timber.i("Deleting $file...")
                 file.delete()
             }
     }
@@ -54,16 +54,28 @@ class PicService(appContext: Context, private val ok: OkClient) {
         withContext(Dispatchers.IO) {
             try {
                 val source = fetch(pic, size)
-                val file = source.file
-                BitmapFactory.decodeFile(file.absolutePath)?.let {
-                    val bitmap = if (source.rotate) rotateIfNecessary(file, it) else it
-                    BitmapFile(bitmap, file)
-                }
+                convertToBitmap(source)
             } catch (e: Exception) {
                 Timber.i(e, "Failed to load pic '${pic.key}'.")
                 null
             }
+        }
 
+    suspend fun fetchBitmapLocal(pic: PicMeta): BitmapFile? =
+        fetchLargestLocal(pic)?.let { convertToBitmap(it) }
+
+    private suspend fun convertToBitmap(source: PicSource): BitmapFile? =
+        withContext(Dispatchers.IO) {
+            try {
+                val file = source.file
+                BitmapFactory.decodeFile(file.absolutePath)?.let {
+                    val bitmap = if (source.rotate) rotateIfNecessary(file, it) else it
+                    BitmapFile(bitmap, file, source.size)
+                }
+            } catch (e: Exception) {
+                Timber.i(e, "Failed to load pic '${source.file}'.")
+                null
+            }
         }
 
     private fun rotateIfNecessary(photoPath: File, bitmap: Bitmap): Bitmap {
@@ -93,22 +105,33 @@ class PicService(appContext: Context, private val ok: OkClient) {
     private suspend fun fetch(pic: PicMeta, size: PicSize): PicSource {
         val dir = if (size == PicSize.Small) smallDir else largeDir
         val destination = dir.resolve(pic.key.key)
+        return fetchLocally(pic, size) ?: download(pic, size, destination)
+    }
+
+    private fun fetchLargestLocal(pic: PicMeta): PicSource? =
+        fetchLocally(pic, PicSize.Large) ?: fetchLocally(pic, PicSize.Small)
+
+    private fun fetchLocally(pic: PicMeta, size: PicSize): PicSource? {
+        val dir = if (size == PicSize.Small) smallDir else largeDir
+        val destination = dir.resolve(pic.key.key)
         val localDestination = localDir.resolve(pic.key.key)
         return when {
             destination.exists() && destination.length() > 0 -> {
                 Timber.d("Found $destination locally.")
-                PicSource(destination, false)
+                PicSource(destination, false, size)
             }
             localDestination.exists() && localDestination.length() > 0 -> {
                 Timber.d("Found $localDestination locally.")
-                PicSource(localDestination, true)
+                PicSource(localDestination, true, size)
             }
-            else -> {
-                val url = if (size == PicSize.Small) pic.small else pic.large
-                val bytes = ok.download(url, destination)
-                Timber.i("Downloaded ${bytes.bytes} bytes from $url to $destination.")
-                PicSource(destination, false)
-            }
+            else -> null
         }
+    }
+
+    private suspend fun download(pic: PicMeta, size: PicSize, destination: File): PicSource {
+        val url = if (size == PicSize.Small) pic.small else pic.large
+        val bytes = ok.download(url, destination)
+        Timber.i("Downloaded ${bytes.bytes} bytes from $url to $destination.")
+        return PicSource(destination, false, size)
     }
 }

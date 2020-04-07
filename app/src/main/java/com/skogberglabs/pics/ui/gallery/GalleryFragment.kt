@@ -96,10 +96,9 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
             view.message.text = message
             val user = if (isPrivate) userInfo else null
             viewModel.updateUser(user)
-            Timber.i("Reconnecting via onViewCreated")
             viewModel.reconnect()
         }
-        val ctrl = Controls(null, view.gallery_view, view.message)
+        val ctrl = Controls(view.gallery_loading, view.gallery_view, view.message)
         viewModel.pics.observe(viewLifecycleOwner) { outcome ->
             when (outcome.status) {
                 Status.Success -> {

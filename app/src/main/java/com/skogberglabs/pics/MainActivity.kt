@@ -3,12 +3,11 @@ package com.skogberglabs.pics
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.observe
 import androidx.navigation.findNavController
-import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.common.api.ApiException
@@ -16,6 +15,7 @@ import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.tasks.Task
 import com.skogberglabs.pics.auth.Google
 import com.skogberglabs.pics.backend.UploadService
+import kotlinx.android.synthetic.main.main_activity.*
 import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
@@ -32,8 +32,9 @@ class MainActivity : AppCompatActivity() {
         val isPrivate = app.settings.isPrivate
         Timber.i("onCreate privately $isPrivate")
         setContentView(R.layout.main_activity)
+        setSupportActionBar(appBar)
         if (savedInstanceState == null) {
-            setupActionBarWithNavController(navController())
+            appBar.setupWithNavController(navController())
         }
         viewModel.mode.observe(this) { mode ->
             val colors = when (mode) {
@@ -51,9 +52,11 @@ class MainActivity : AppCompatActivity() {
                 )
             }
             window.statusBarColor = colors.statusBar
+            // the bottom bar background
             window.navigationBarColor = colors.navigationBar
+
             supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
-            findViewById<View>(R.id.main_view).setBackgroundColor(colors.background)
+            main_view.setBackgroundColor(colors.background)
         }
         viewModel.effectiveUser.observe(this) { user ->
             UploadService.enqueue(applicationContext, user)
@@ -86,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        setupActionBarWithNavController(navController())
+        appBar.setupWithNavController(navController())
     }
 
     override fun onSupportNavigateUp(): Boolean {

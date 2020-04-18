@@ -1,26 +1,7 @@
 <resources>
-
-    <!-- Base application theme. -->
-    <style name="PublicTheme2" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorDarkBackground</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:colorBackground">@color/colorDarkBackground</item>
-    </style>
-
-    <style name="PublicTheme" parent="Theme.MaterialComponents">
+    <style name="PublicTheme" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/colorAccent</item>
         <item name="colorSecondary">@color/colorAccent</item>
-<!--        <item name="colorPrimaryDark">@color/colorDarkBackground</item>-->
-<!--        <item name="colorAccent">@color/colorAccent</item>-->
-<!--        <item name="android:colorBackground">@color/colorDarkBackground</item>-->
+        <item name="colorOnPrimary">@color/colorLight</item>
     </style>
-
-    <style name="PrivateTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorPink</item>
-        <item name="android:colorBackground">@color/colorDark</item>
-    </style>
-
 </resources>

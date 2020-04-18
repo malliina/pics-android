@@ -30,6 +30,7 @@ import com.skogberglabs.pics.ui.ResourceFragment
 import com.skogberglabs.pics.ui.distinctUntilChanged
 import com.skogberglabs.pics.ui.init
 import kotlinx.android.synthetic.main.gallery_fragment.view.*
+import kotlinx.android.synthetic.main.main_activity.*
 import timber.log.Timber
 import java.io.File
 
@@ -161,6 +162,8 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                 launchCamera()
             }
         }
+
+        requireActivity().appBarLayout.visibility = View.VISIBLE
     }
 
     override fun onDestroy() {
@@ -227,7 +230,9 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         inflater.inflate(R.menu.profile_menu, menu)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = onMenuItemSelected(item)
+
+    private fun onMenuItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.public_gallery_item -> {
             adjustMode(false)
             true

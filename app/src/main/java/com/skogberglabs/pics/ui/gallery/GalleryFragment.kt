@@ -144,7 +144,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                     }
                 }
                 Status.Error -> {
-                    ctrl.display(getString(R.string.error_generic))
+                    ctrl.display(getString(R.string.error_loading_pics))
                 }
                 Status.Loading -> {
                     ctrl.enableLoading()

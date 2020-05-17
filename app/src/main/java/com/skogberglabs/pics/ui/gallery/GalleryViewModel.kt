@@ -58,11 +58,10 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     data.postValue(Outcome.success(list))
                     Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
                 } catch (e: Exception) {
-                    val noVisiblePictures = limit == 0
+                    Timber.e(e, "Failed to load pics from $offset until $until.")
+                    val noVisiblePictures = current.isEmpty()
                     if (noVisiblePictures) {
                         data.postValue(Outcome.error(SingleError.backend("Error.")))
-                    } else {
-                        Timber.e(e, "Failed to load pics from $offset until $until.")
                     }
                 }
             }

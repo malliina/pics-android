@@ -1,9 +1,10 @@
 package com.skogberglabs.pics.backend
 
+import com.skogberglabs.pics.UserSettings
 import com.skogberglabs.pics.backend.OkClient.Companion.Accept
 import com.skogberglabs.pics.backend.OkClient.Companion.Authorization
 
-class PicsOkClient(val http: OkClient) {
+class PicsOkClient(val http: OkClient, val cache: UserSettings) {
     companion object {
         const val CsrfHeaderName = "Csrf-Token"
         const val CsrfTokenNoCheck = "nocheck"
@@ -19,12 +20,18 @@ class PicsOkClient(val http: OkClient) {
 
     suspend fun delete(pic: PicKey): Int = http.delete(urlTo("/pics/$pic"), requestHeaders())
 
-    suspend fun pics(limit: Int, offset: Int): Pics =
-        http.getJson(
-            urlTo("/pics?limit=$limit&offset=$offset"),
-            requestHeaders(),
-            Pics.adapter
-        )
+    fun picsCached(limit: Int, offset: Int, user: Email?): Pics? {
+        val url = picsUrl(limit, offset)
+        return cache.loadPics(user, url)
+    }
+
+    suspend fun pics(limit: Int, offset: Int) = pics(picsUrl(limit, offset))
+
+
+    private suspend fun pics(url: FullUrl): Pics =
+        http.getJson(url, requestHeaders(), Pics.adapter)
+
+    private fun picsUrl(limit: Int, offset: Int) = urlTo("/pics?limit=$limit&offset=$offset")
 
     private fun urlTo(path: String) = EnvConf.BackendUrl.append(path)
 

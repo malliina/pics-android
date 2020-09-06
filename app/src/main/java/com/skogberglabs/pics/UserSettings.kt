@@ -3,9 +3,7 @@ package com.skogberglabs.pics
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.skogberglabs.pics.backend.Email
-import com.skogberglabs.pics.backend.Json
-import com.skogberglabs.pics.backend.UserInfo
+import com.skogberglabs.pics.backend.*
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass
 import timber.log.Timber
@@ -39,6 +37,9 @@ class UserSettings(private val prefs: SharedPreferences) {
     var isPrivate: Boolean
         set(value) = save(IsPrivate(value), isPrivateAdapter, isPrivateKey)
         get() = load(isPrivateKey, isPrivateAdapter, IsPrivate(false)).isPrivate
+
+    fun loadPics(user: Email?, url: FullUrl): Pics? = loadOpt("${user ?: "anon"}-$url", Pics.adapter)
+    fun savePics(user: Email?, url: FullUrl, pics: Pics) = save(pics, Pics.adapter, "${user ?: "anon"}-$url")
 
     private fun <T> load(key: String, adapter: JsonAdapter<T>, default: T): T {
         return loadOpt(key, adapter) ?: default

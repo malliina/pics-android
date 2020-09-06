@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.skogberglabs.pics.PicsApp
 import com.skogberglabs.pics.backend.*
 import com.skogberglabs.pics.ui.AppViewModel
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
     private val data = MutableLiveData<Outcome<PicsList>>()
     private val existing: List<PicMeta> get() = data.value?.data?.pics ?: emptyList()
     val pics: LiveData<Outcome<PicsList>> = data
+    val http: PicsOkClient get() = picsApp.http
 
     private val socket: PicsSocket = PicsSocket.build(GalleryPicsDelegate())
 
@@ -50,7 +52,11 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     data.postValue(Outcome.loading())
                 }
                 try {
-                    val items = picsApp.http.pics(limit, offset).pics
+//                    val cached = http.picsCached(limit, offset, latestUser?.email)
+//                    cached?.let { cache ->
+//                        data.postValue(Outcome.success(cache))
+//                    }
+                    val items = http.pics(limit, offset).pics
                     val newList: List<PicMeta> =
                         if (offset == 0) items
                         else current + items
@@ -82,16 +88,15 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     val file = operation.file
                     val uri = picsApp.files.uriForfile(localCopy)
                     val url = FullUrl.build(uri.toString())!!
-                    val local =
-                        PicMeta(
-                            key,
-                            System.currentTimeMillis() / 1000,
-                            url,
-                            url,
-                            url,
-                            url,
-                            key.value
-                        )
+                    val local = PicMeta(
+                        key,
+                        System.currentTimeMillis() / 1000,
+                        url,
+                        url,
+                        url,
+                        url,
+                        key.value
+                    )
                     val list = PicsList(listOf(local) + current, 1, 0, emptyList(), false)
                     data.postValue(Outcome.success(list))
                     Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
@@ -104,7 +109,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
     }
 
     fun reconnect() {
-        socket.open(picsApp.http.token)
+        socket.open(http.token)
     }
 
     fun disconnect() {
@@ -113,7 +118,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
 
     inner class GalleryPicsDelegate : PicsSocketDelegate {
         override fun onOpened(url: HttpUrl) {
-            Timber.i("Opened to '$url'.")
+            Timber.i("Opened '$url'.")
         }
 
         override fun onPicsAdded(pics: List<PicMeta>) {

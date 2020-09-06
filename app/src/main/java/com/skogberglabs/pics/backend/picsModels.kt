@@ -1,6 +1,5 @@
 package com.skogberglabs.pics.backend
 
-import android.graphics.Bitmap
 import android.os.Parcelable
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass

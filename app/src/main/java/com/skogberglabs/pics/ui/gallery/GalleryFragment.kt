@@ -84,7 +84,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
             val itemCount = viewAdapter.itemCount
             // If spanCount is 2 and itemsPerLoad is an even number, then lastPos is always uneven
             // if there are more items. So, we add +1 to lastPos which is an even number, to make
-            // this condition work. Remove this hack is possible.
+            // this condition work. Remove this hack if possible.
             if (lastPos + 1 + loadMoreThreshold == itemCount) {
                 viewModel.loadPics(itemsPerLoad, itemCount)
             }
@@ -113,14 +113,18 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
                             viewAdapter.list = pics
                             // Animates collection updates
                             val removed = list.removedIndices
+                            val inserted = list.insertedIndices
                             if (!initial) {
-                                if (list.prependedCount > 0 || list.appendedCount > 0 || removed.isNotEmpty()) {
+                                if (list.prependedCount > 0 || list.appendedCount > 0 || removed.isNotEmpty() || inserted.isNotEmpty()) {
                                     val isScrolledToTop =
                                         viewManager.findFirstVisibleItemPosition() == 0
                                     Timber.i("Animated update")
                                     viewAdapter.notifyItemRangeInserted(0, list.prependedCount)
-                                    list.removedIndices.forEach { idx ->
+                                    removed.forEach { idx ->
                                         viewAdapter.notifyItemRemoved(idx)
+                                    }
+                                    inserted.forEach { idx ->
+                                        viewAdapter.notifyItemInserted(idx)
                                     }
                                     viewAdapter.notifyItemRangeInserted(
                                         previousSize,

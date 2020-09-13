@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.skogberglabs.pics.PicsApp
 import com.skogberglabs.pics.backend.*
 import com.skogberglabs.pics.ui.AppViewModel
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +16,7 @@ data class PicsList(
     val pics: List<PicMeta>,
     val prependedCount: Int,
     val appendedCount: Int,
+    val insertedIndices: List<Int>,
     val removedIndices: List<Int>,
     val backgroundUpdate: Boolean = false
 )
@@ -33,17 +33,20 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
     private var latestUser: UserInfo? = null
 
     fun updateUser(user: UserInfo?) {
-        val isChanged = latestUser?.email != user?.email
-        Timber.i("Was ${latestUser?.email}, is ${user?.email}, changed $isChanged, initial $initial")
+        val email = user?.email
+        val isChanged = latestUser?.email != email
+        Timber.i("Was ${latestUser?.email}, is $email, changed $isChanged, initial $initial")
         latestUser = user
         picsApp.http.token = user?.idToken
         if (isChanged || initial) {
-            loadPics(100, 0)
+            loadPics(100, 0, initial, email)
         }
         initial = false
     }
 
-    fun loadPics(limit: Int, offset: Int) {
+    fun loadPics(limit: Int, offset: Int) = loadPics(limit, offset, false, latestUser?.email)
+
+    private fun loadPics(limit: Int, offset: Int, isInitial: Boolean, user: Email?) {
         val until = offset + limit
         val current = existing
         viewModelScope.launch {
@@ -51,26 +54,69 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                 if (offset == 0) {
                     data.postValue(Outcome.loading())
                 }
+                val cachedList = if (isInitial) {
+                    val cache = http.picsCached(limit, offset, user)
+                    if (cache != null) {
+                        Timber.i("Got ${cache.pics.size} pics from cache.")
+                        val list = PicsList(
+                            cache.pics,
+                            0,
+                            if (offset == 0) 0 else cache.pics.size,
+                            emptyList(),
+                            emptyList()
+                        )
+                        data.postValue(Outcome.success(list))
+                        list
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
                 try {
-//                    val cached = http.picsCached(limit, offset, latestUser?.email)
-//                    cached?.let { cache ->
-//                        data.postValue(Outcome.success(cache))
-//                    }
                     val items = http.pics(limit, offset).pics
-                    val newList: List<PicMeta> =
-                        if (offset == 0) items
-                        else current + items
-                    val list = PicsList(newList, 0, if (offset == 0) 0 else items.size, emptyList())
-                    data.postValue(Outcome.success(list))
-                    Timber.i("Loaded pics from $offset until $until, got ${items.size} items.")
+                    val newList: List<PicMeta> = if (offset == 0) items else current + items
+                    if (cachedList == null) {
+                        val list = PicsList(
+                            newList,
+                            0,
+                            if (offset == 0) 0 else items.size,
+                            emptyList(),
+                            emptyList()
+                        )
+                        data.postValue(Outcome.success(list))
+                    } else {
+                        merge(cachedList.pics, newList)
+                    }
+                    http.savePics(limit, offset, user, Pics(newList))
+                    Timber.i("Loaded ${items.size} items from $offset until $until")
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to load pics from $offset until $until.")
-                    val noVisiblePictures = current.isEmpty()
+                    val noVisiblePictures = current.isEmpty() && (cachedList?.pics ?: emptyList()).isEmpty()
                     if (noVisiblePictures) {
                         data.postValue(Outcome.error(SingleError.backend("Error.")))
                     }
                 }
             }
+        }
+    }
+
+    private fun merge(old: List<PicMeta>, newer: List<PicMeta>) {
+        // Pics in new list but not in old
+        val inserts = newer.foldIndexed(emptyList<Int>()) { index, acc, meta ->
+            if (old.any { oldMeta -> oldMeta.key == meta.key }) acc
+            else acc + listOf(index)
+        }
+        // Pics in old but not in new
+        val removes = old.foldIndexed(emptyList<Int>()) { index, acc, meta ->
+            if (newer.any { newMeta -> newMeta.key == meta.key }) acc
+            else acc + listOf(index)
+        }
+        if (inserts.isNotEmpty() || removes.isNotEmpty()) {
+            Timber.i("Got ${inserts.size} inserts and ${removes.size} removals, updating.")
+            data.postValue(Outcome.success(PicsList(newer, 0, 0, inserts, removes)))
+        } else {
+            Timber.i("Cache is in sync with remote, no updates.")
         }
     }
 
@@ -86,8 +132,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                     Timber.i("Copied ${operation.file} to $localCopy bytes. Size ${localCopy.length()} bytes.")
                     val key = PicKey(localCopy.name)
                     val file = operation.file
-                    val uri = picsApp.files.uriForfile(localCopy)
-                    val url = FullUrl.build(uri.toString())!!
+                    val url = picsApp.files.urlForFile(localCopy)
                     val local = PicMeta(
                         key,
                         System.currentTimeMillis() / 1000,
@@ -97,7 +142,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
                         url,
                         key.value
                     )
-                    val list = PicsList(listOf(local) + current, 1, 0, emptyList(), false)
+                    val list = PicsList(listOf(local) + current, 1, 0, emptyList(), emptyList(), false)
                     data.postValue(Outcome.success(list))
                     Timber.i("Got photo at $file of size ${file.length()} bytes. Uploading...")
                     UploadService.enqueue(picsApp.applicationContext, operation.user)
@@ -123,22 +168,22 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
 
         override fun onPicsAdded(pics: List<PicMeta>) {
             val current = existing
-            // Removes any existing keys with matching clientKeys, then prepends the provided pics
+            // Deduplication: Removes any existing keys with matching clientKeys, then prepends the provided pics
             val base =
                 current.filterNot { p -> pics.any { pic -> pic.clientKey == p.clientKey } }
             // If the provided pics already existed, performs a background update only
             val newCount = pics.size - (current.size - base.size)
             val onlyExistingUpdated = newCount == 0
-            val update = PicsList(pics + base, newCount, 0, emptyList(), onlyExistingUpdated)
+            val update = PicsList(pics + base, newCount, 0, emptyList(), emptyList(), onlyExistingUpdated)
             data.postValue(Outcome.success(update))
         }
 
         override fun onPicsRemoved(keys: List<PicKey>) {
             val old = existing
-            val indices =
+            val removedIndices =
                 old.withIndex().filter { p -> keys.contains(p.value.key) }.map { it.index }
-            val remaining = old.filterIndexed { index, _ -> !indices.contains(index) }
-            data.postValue(Outcome.success(PicsList(remaining, 0, 0, indices)))
+            val remaining = old.filterIndexed { index, _ -> !removedIndices.contains(index) }
+            data.postValue(Outcome.success(PicsList(remaining, 0, 0, emptyList(), removedIndices)))
         }
 
         override fun onClosed(url: HttpUrl) {

@@ -38,23 +38,23 @@ class UserSettings(private val prefs: SharedPreferences) {
         set(value) = save(IsPrivate(value), isPrivateAdapter, isPrivateKey)
         get() = load(isPrivateKey, isPrivateAdapter, IsPrivate(false)).isPrivate
 
-    fun loadPics(user: Email?, url: FullUrl): Pics? = loadOpt("${user ?: "anon"}-$url", Pics.adapter)
-    fun savePics(user: Email?, url: FullUrl, pics: Pics) = save(pics, Pics.adapter, "${user ?: "anon"}-$url")
+    fun loadPics(user: Email?, url: FullUrl): Pics? =
+        loadOpt("${user ?: "anon"}-$url", Pics.adapter)
 
-    private fun <T> load(key: String, adapter: JsonAdapter<T>, default: T): T {
-        return loadOpt(key, adapter) ?: default
-    }
+    fun savePics(user: Email?, url: FullUrl, pics: Pics) =
+        save(pics, Pics.adapter, "${user ?: "anon"}-$url")
 
-    private fun <T> loadOpt(key: String, adapter: JsonAdapter<T>): T? {
-        val str = prefs.getString(key, null)
-        return str?.let { adapter.fromJson(it) }
-    }
+    private fun <T> load(key: String, adapter: JsonAdapter<T>, default: T): T =
+        loadOpt(key, adapter) ?: default
+
+    private fun <T> loadOpt(key: String, adapter: JsonAdapter<T>): T? =
+        prefs.getString(key, null)?.let { adapter.fromJson(it) }
 
     private fun <T> save(item: T, adapter: JsonAdapter<T>, to: String) {
         prefs.edit {
             val json = adapter.toJson(item)
             putString(to, json)
-            Timber.i("Saved $json.")
+//            Timber.i("Saved $json.")
         }
     }
 }

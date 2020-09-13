@@ -34,9 +34,10 @@ class PicsApp : Application() {
         )
         val tree = if (BuildConfig.DEBUG) Timber.DebugTree() else NoLogging()
         Timber.plant(tree)
-        savedSettings = UserSettings.load(applicationContext)
+        val settings = UserSettings.load(applicationContext)
+        savedSettings = settings
         httpClient = OkClient(GoogleTokenSource(applicationContext))
-        picsClient = PicsOkClient(httpClient)
+        picsClient = PicsOkClient(httpClient, settings)
         appCamera = SimpleCamera(applicationContext)
         service = PicService(applicationContext, httpClient)
         picFiles = PicFiles(applicationContext)

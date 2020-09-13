@@ -4,7 +4,7 @@ import com.skogberglabs.pics.UserSettings
 import com.skogberglabs.pics.backend.OkClient.Companion.Accept
 import com.skogberglabs.pics.backend.OkClient.Companion.Authorization
 
-class PicsOkClient(val http: OkClient, val cache: UserSettings) {
+class PicsOkClient(val http: OkClient, private val cache: UserSettings) {
     companion object {
         const val CsrfHeaderName = "Csrf-Token"
         const val CsrfTokenNoCheck = "nocheck"
@@ -25,8 +25,10 @@ class PicsOkClient(val http: OkClient, val cache: UserSettings) {
         return cache.loadPics(user, url)
     }
 
-    suspend fun pics(limit: Int, offset: Int) = pics(picsUrl(limit, offset))
+    fun savePics(limit: Int, offset: Int, user: Email?, pics: Pics) =
+        cache.savePics(user, picsUrl(limit, offset), pics)
 
+    suspend fun pics(limit: Int, offset: Int) = pics(picsUrl(limit, offset))
 
     private suspend fun pics(url: FullUrl): Pics =
         http.getJson(url, requestHeaders(), Pics.adapter)

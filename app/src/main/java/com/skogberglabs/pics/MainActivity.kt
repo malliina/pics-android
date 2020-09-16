@@ -29,8 +29,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
-        val isPrivate = app.settings.isPrivate
-        Timber.i("onCreate privately $isPrivate")
         setContentView(R.layout.main_activity)
         setSupportActionBar(appBar)
         if (savedInstanceState == null) {

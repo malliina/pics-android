@@ -1,7 +1,16 @@
 <resources>
-    <style name="PublicTheme" parent="Theme.MaterialComponents.NoActionBar">
-        <item name="colorPrimary">@color/colorAccent</item>
+    <style name="PublicTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorLightActionBar</item>
+        <item name="colorPrimaryDark">@color/colorLightActionBarDarker</item>
         <item name="colorSecondary">@color/colorAccent</item>
         <item name="colorOnPrimary">@color/colorLight</item>
+        <item name="android:navigationBarColor">@color/colorLightNavigationBar</item>
+    </style>
+    <style name="PrivateTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/colorDarkActionBar</item>
+        <item name="colorPrimaryDark">@color/colorDarkActionBarDarker</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnPrimary">@color/colorLight</item>
+        <item name="android:navigationBarColor">@color/colorDarkNavigationBar</item>
     </style>
 </resources>

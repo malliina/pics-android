@@ -1,6 +1,7 @@
 package com.skogberglabs.pics
 
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -27,34 +28,17 @@ class MainActivity : AppCompatActivity() {
     val app: PicsApp get() = application as PicsApp
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val isPrivate = app.settings.isPrivate
+        val themeId = if (isPrivate) R.style.PrivateTheme else R.style.PublicTheme
+        val name = if (isPrivate) "private" else "public"
+        Timber.i("Installing $name theme.")
+        setTheme(themeId)
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this).get(MainActivityViewModel::class.java)
         setContentView(R.layout.main_activity)
         setSupportActionBar(appBar)
         if (savedInstanceState == null) {
             appBar.setupWithNavController(navController())
-        }
-        viewModel.mode.observe(this) { mode ->
-            val colors = when (mode) {
-                AppMode.Public -> AppColors(
-                    statusBar = getColor(R.color.colorLightStatusBar),
-                    navigationBar = getColor(R.color.colorLightNavigationBar),
-                    background = getColor(R.color.colorLightBackground),
-                    actionBar = getColor(R.color.colorLightActionBar)
-                )
-                AppMode.Private -> AppColors(
-                    getColor(R.color.colorDarkStatusBar),
-                    getColor(R.color.colorDarkNavigationBar),
-                    getColor(R.color.colorDarkBackground),
-                    getColor(R.color.colorDarkActionBar)
-                )
-            }
-            window.statusBarColor = colors.statusBar
-            // the bottom bar background
-            window.navigationBarColor = colors.navigationBar
-
-            supportActionBar?.setBackgroundDrawable(ColorDrawable(colors.actionBar))
-            main_view.setBackgroundColor(colors.background)
         }
         viewModel.effectiveUser.observe(this) { user ->
             UploadService.enqueue(applicationContext, user)
@@ -75,9 +59,11 @@ class MainActivity : AppCompatActivity() {
             val account = completedTask.getResult(ApiException::class.java)
             val user = account?.let { a -> Google.readUser(a) }
             Timber.i("Sign in success.")
-            app.settings.isPrivate = true
-            app.settings.privateEmail = user?.email
+            val settings = app.settings
+            settings.isPrivate = true
+            settings.privateEmail = user?.email
             viewModel.updateSignedInUser(user)
+            recreate()
         } catch (e: ApiException) {
             val str = CommonStatusCodes.getStatusCodeString(e.statusCode)
             Timber.w(e, "Sign in failed. Code ${e.statusCode}. $str.")

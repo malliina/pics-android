@@ -19,6 +19,7 @@
     <color name="colorDark">#323232</color>
     <color name="colorDarkAccent">#007AFF</color>
     <color name="colorDarkActionBar">#323232</color>
+    <color name="colorDarkActionBarDarker">#222222</color>
     <color name="colorDarkBackground">#323232</color>
     <color name="colorDarkNavigationBar">#323232</color>
     <color name="colorDarkStatusBar">#323232</color>
@@ -27,7 +28,10 @@
     <color name="colorLight">#EFEFF4</color>
     <color name="colorLightAccent">#007AFF</color>
     <color name="colorLightActionBar">#464646</color>
+    <color name="colorLightActionBarDarker">#363636</color>
     <color name="colorLightBackground">#EFEFEF</color>
     <color name="colorLightNavigationBar">#464646</color>
     <color name="colorLightStatusBar">#464646</color>
+    <color name="colorLightDark">#323232</color>
+    <color name="colorLightDarker">#222222</color>
 </resources>

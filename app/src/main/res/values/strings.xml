@@ -15,4 +15,8 @@
     <string name="delete_dialog_no">No</string>
     <string name="error_generic">An error occurred.</string>
     <string name="error_loading_pics">Failed to load pics. Try again later.</string>
+    <string name="about">About</string>
+    <string name="developed_by">Developed by Michael Skogberg.</string>
+    <string name="reporting_info">Report objectionable images or copyright violations to info@skogberglabs.com.</string>
+    <string name="version">Version %1$s</string>
 </resources>

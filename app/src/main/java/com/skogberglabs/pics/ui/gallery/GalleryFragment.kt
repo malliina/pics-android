@@ -212,7 +212,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
     override fun onPrepareOptionsMenu(menu: Menu) {
         super.onPrepareOptionsMenu(menu)
         val signedInEmail = app.settings.privateEmail
-        // public, login, private, logout
+        // public, login, private, about, logout
         val publicItem = menu.getItem(0)
         publicItem.isChecked = !isPrivate
         publicItem.isCheckable = !isPrivate
@@ -226,7 +226,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         signedInEmail?.let { email ->
             privateItem.title = email.email
         }
-        val logoutItem = menu.getItem(3)
+        val logoutItem = menu.getItem(4)
         logoutItem.isVisible = isSignedIn
     }
 
@@ -258,6 +258,11 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
             }
             true
         }
+        R.id.about_item -> {
+            val destination = GalleryFragmentDirections.galleryToAbout()
+            findNavController().navigate(destination)
+            true
+        }
         else -> {
             super.onOptionsItemSelected(item)
         }
@@ -270,6 +275,7 @@ class GalleryFragment : ResourceFragment(R.layout.gallery_fragment), PicClickDel
         } else {
             mainViewModel.updateUser(null)
         }
+        requireActivity().recreate()
     }
 
     private fun showToast(message: String) =

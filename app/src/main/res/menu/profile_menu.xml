@@ -11,6 +11,9 @@
         android:id="@+id/private_item"
         android:visible="false" />
     <item
+        android:id="@+id/about_item"
+        android:title="@string/about" />
+    <item
         android:id="@+id/logout_item"
         android:title="@string/logout"
         android:visible="false" />

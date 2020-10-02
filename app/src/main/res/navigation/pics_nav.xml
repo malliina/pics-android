@@ -14,6 +14,12 @@
             app:enterAnim="@anim/in_from_right"
             app:popExitAnim="@anim/out_to_up"
             app:exitAnim="@anim/out_to_left" />
+        <action
+            android:id="@+id/gallery_to_about"
+            app:destination="@id/about"
+            app:enterAnim="@anim/in_from_up"
+            app:popExitAnim="@anim/out_to_down"
+            app:exitAnim="@anim/out_to_down" />
     </fragment>
     <fragment
         android:id="@+id/pic_pager"
@@ -25,5 +31,10 @@
         <argument
             android:name="key"
             app:argType="com.skogberglabs.pics.backend.PicKey" />
+    </fragment>
+    <fragment
+        android:id="@+id/about"
+        android:name="com.skogberglabs.pics.ui.about.AboutFragment"
+        tools:layout="@layout/about_fragment">
     </fragment>
 </navigation>

@@ -49,9 +49,11 @@ class UploadService : JobIntentService() {
                 UserInfo(Email(e), IdToken(t))
             }
         }
-        backgroundScope.launch { uploadFromStagingOldestFirst(user) }
+        backgroundScope.launch {
+            recallTooOldUploadingFiles(user)
+            uploadFromStagingOldestFirst(user)
+        }
     }
-
 
     private fun headers(token: IdToken?): Map<String, String> {
         val acceptPair = Accept to PicsOkClient.PicsVersion10
@@ -61,11 +63,23 @@ class UploadService : JobIntentService() {
         ) else mapOf(acceptPair)
     }
 
+    private fun recallTooOldUploadingFiles(user: UserInfo?) {
+        val files = cameraFiles.uploadingDirectory(user?.email).listFiles() ?: emptyArray()
+        files.filter { f ->
+            val ageMillis = System.currentTimeMillis() - f.lastModified()
+            val sixHours = 6*60*60*1000
+            ageMillis > sixHours
+        }.forEach { file ->
+            val dest = cameraFiles.stagingDirectory(user?.email).resolve(file.name)
+            file.renameTo(dest)
+        }
+    }
+
     private suspend fun uploadFromStagingOldestFirst(user: UserInfo?) {
         val email = user?.email
         val files = cameraFiles.stagingDirectory(email).listFiles() ?: emptyArray()
         Timber.i("Found ${files.size} files in staging directory for ${email?.value ?: "anonymous"}.")
-        files.minBy { f -> f.lastModified() }?.let { oldestStaging ->
+        files.minByOrNull { f -> f.lastModified() }?.let { oldestStaging ->
             if (oldestStaging.length() > 0) {
                 val uploadingDir = cameraFiles.uploadingDirectory(email)
                 uploadingDir.mkdirs()
@@ -103,6 +117,7 @@ class UploadService : JobIntentService() {
                     Timber.e("Failed to move file from '$oldestStaging' to '$fileToUpload'.")
                 }
             } else {
+                // deletes files in staging dir of size 0 bytes
                 val wasDeleted = oldestStaging.delete()
                 val msg =
                     if (wasDeleted) "Deleted empty file '$oldestStaging'."

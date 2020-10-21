@@ -18,8 +18,6 @@ class MainActivityViewModel(app: Application) : PicsViewModel(app) {
     private val activeUserData = MutableLiveData<UserInfo?>()
     val effectiveUser: LiveData<UserInfo?> =
         activeUserData.map { u -> if (settings.isPrivate) u else null }.distinctUntilChanged()
-    val mode: LiveData<AppMode> =
-        activeUserData.map { if (settings.isPrivate) AppMode.Private else AppMode.Public }
 
     fun signInSilently(ctx: Context) {
         viewModelScope.launch {

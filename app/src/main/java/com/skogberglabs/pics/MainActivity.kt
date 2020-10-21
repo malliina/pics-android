@@ -46,6 +46,11 @@ class MainActivity : AppCompatActivity() {
         viewModel.signInSilently(applicationContext)
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        viewModel.signInSilently(applicationContext)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == requestCodeSignIn) {

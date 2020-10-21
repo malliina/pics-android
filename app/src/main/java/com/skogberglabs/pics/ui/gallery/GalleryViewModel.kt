@@ -128,6 +128,7 @@ class GalleryViewModel(app: Application) : AppViewModel(app) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
+                    // Uses a local copy which is not dependent on staging/upload processes
                     val localCopy = picsApp.pics.localCopy(operation.file)
                     Timber.i("Copied ${operation.file} to $localCopy bytes. Size ${localCopy.length()} bytes.")
                     val key = PicKey(localCopy.name)

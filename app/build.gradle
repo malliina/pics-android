@@ -8,6 +8,15 @@ apply plugin: "kotlin-kapt"
 
 apply plugin: "androidx.navigation.safeargs.kotlin"
 
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
@@ -16,8 +25,9 @@ android {
         minSdkVersion 24
         targetSdkVersion 29
         versionCode 5
-        versionName "1.5"
+        versionName "1.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "GitHash", "\"${getGitHash()}\""
     }
     buildTypes {
         release {
@@ -55,7 +65,7 @@ dependencies {
     implementation "com.jakewharton.timber:timber:4.7.1"
     implementation "com.mapbox.mapboxsdk:mapbox-android-plugin-annotation-v8:0.7.0"
     implementation "com.mapbox.mapboxsdk:mapbox-android-sdk:8.3.0"
-    def appCenterSdkVersion = '3.0.0'
+    def appCenterSdkVersion = "3.3.1"
     implementation "com.microsoft.appcenter:appcenter-analytics:${appCenterSdkVersion}"
     implementation "com.microsoft.appcenter:appcenter-crashes:${appCenterSdkVersion}"
     implementation "com.squareup.moshi:moshi:1.9.2"
